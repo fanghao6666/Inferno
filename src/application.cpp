@@ -1,13 +1,8 @@
 #include "application.h"
-#include "imgui_impl_glfw.h"
-#include "imgui_impl_opengl3.h"
 #include "utility.h"
-#include "resource_manager.h"
-#include "shader_cache.h"
-#include "profiler.h"
 #include <iostream>
 
-namespace nimble
+namespace inferno
 {
 // -----------------------------------------------------------------------------------------------------------------------------------
 
@@ -76,43 +71,23 @@ bool Application::init_base(int argc, const char* argv[])
     m_height          = settings.height;
     m_title           = settings.title;
 
-    int major_ver = 4;
-#if defined(__APPLE__)
-    int minor_ver = 1;
-#elif defined(__EMSCRIPTEN__)
-    major_ver                = 3;
-    int         minor_ver    = 0;
-#else
-    int minor_ver = 3;
-#endif
 
     if (glfwInit() != GLFW_TRUE)
     {
-        NIMBLE_LOG_FATAL("Failed to initialize GLFW");
+        INFERNO_LOG_FATAL("Failed to initialize GLFW");
         return false;
     }
 
-    glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_API);
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     glfwWindowHint(GLFW_RESIZABLE, resizable);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, major_ver);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, minor_ver);
     glfwWindowHint(GLFW_MAXIMIZED, maximized);
     glfwWindowHint(GLFW_REFRESH_RATE, refresh_rate);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    glfwWindowHint(GLFW_SAMPLES, 8);
-
-#if __APPLE__
-    const char* glsl_version = "#version 150";
-    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-#else
-    const char* glsl_version = "#version 130";
-#endif
 
     m_window = glfwCreateWindow(m_width, m_height, m_title.c_str(), nullptr, nullptr);
 
     if (!m_window)
     {
-        NIMBLE_LOG_FATAL("Failed to create GLFW window!");
+        INFERNO_LOG_FATAL("Failed to create GLFW window!");
         return false;
     }
 
@@ -124,12 +99,8 @@ bool Application::init_base(int argc, const char* argv[])
     glfwSetWindowSizeCallback(m_window, window_size_callback_glfw);
     glfwSetWindowUserPointer(m_window, this);
 
-    glfwMakeContextCurrent(m_window);
 
-    NIMBLE_LOG_INFO("Successfully initialized platform!");
-
-    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
-        return false;
+    INFERNO_LOG_INFO("Successfully initialized platform!");
 
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
@@ -149,25 +120,20 @@ bool Application::init_base(int argc, const char* argv[])
     ImGui::StyleColorsDark();
 
     // Setup Platform/Renderer bindings
-    ImGui_ImplGlfw_InitForOpenGL(m_window, true);
-    ImGui_ImplOpenGL3_Init(glsl_version);
+   /* ImGui_ImplGlfw_InitForOpenGL(m_window, true);
+    ImGui_ImplOpenGL3_Init(glsl_version);*/
 
     int display_w, display_h;
     glfwGetFramebufferSize(m_window, &display_w, &display_h);
     m_width  = display_w;
     m_height = display_h;
 
-    glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
-
-    if (!m_debug_draw.init())
-        return false;
-
     if (!init(argc, argv))
         return false;
 
-    profiler::initialize();
-    m_viewport_manager.initialize(m_width, m_height);
-    m_renderer.initialize(&m_resource_manager, m_width, m_height);
+    //profiler::initialize();
+    //m_viewport_manager.initialize(m_width, m_height);
+    //m_renderer.initialize(&m_resource_manager, m_width, m_height);
 
     return true;
 }
@@ -188,17 +154,17 @@ void Application::shutdown_base()
     // Execute user-side shutdown method.
     shutdown();
 
-    profiler::shutdown();
+    /*profiler::shutdown();
 
     m_renderer.shutdown();
-    m_resource_manager.shutdown();
+    m_resource_manager.shutdown();*/
 
     // Shutdown debug draw.
-    m_debug_draw.shutdown();
+    //m_debug_draw.shutdown();
 
     // Shutdown ImGui.
-    ImGui_ImplOpenGL3_Shutdown();
-    ImGui_ImplGlfw_Shutdown();
+   /* ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplGlfw_Shutdown();*/
     ImGui::DestroyContext();
 
     // Shutdown GLFW.
@@ -218,10 +184,10 @@ void Application::begin_frame()
 
     glfwPollEvents();
 
-    ImGui_ImplOpenGL3_NewFrame();
-    ImGui_ImplGlfw_NewFrame();
+  /*  ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplGlfw_NewFrame();*/
     ImGui::NewFrame();
-    profiler::begin_frame();
+    //profiler::begin_frame();
 
     m_mouse_delta_x = m_mouse_x - m_last_mouse_x;
     m_mouse_delta_y = m_mouse_y - m_last_mouse_y;
@@ -234,11 +200,9 @@ void Application::begin_frame()
 
 void Application::end_frame()
 {
-    profiler::end_frame();
+    //profiler::end_frame();
     ImGui::Render();
-    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-
-    glfwSwapBuffers(m_window);
+    //ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
     m_timer.stop();
     m_delta = m_timer.elapsed_time_milisec();
@@ -419,4 +383,4 @@ void Application::window_size_callback_glfw(GLFWwindow* window, int width, int h
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------
-} // namespace nimble
+} // namespace inferno

@@ -4,7 +4,7 @@
 #define GLM_ENABLE_EXPERIMENTAL
 #include <gtx/quaternion.hpp>
 
-namespace nimble
+namespace inferno
 {
 struct Transform
 {
@@ -106,4 +106,4 @@ struct Transform
 
     // -----------------------------------------------------------------------------------------------------------------------------------
 };
-} // namespace nimble
+} // namespace inferno

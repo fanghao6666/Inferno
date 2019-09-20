@@ -1,6 +1,6 @@
 #include "timer.h"
 
-namespace nimble
+namespace inferno
 {
 Timer::Timer()
 {
@@ -75,4 +75,4 @@ double Timer::elapsed_time_microsec()
 
     return _end_time_microsec - _start_time_microsec;
 }
-} // namespace nimble
+} // namespace inferno

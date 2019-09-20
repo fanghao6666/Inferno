@@ -3,7 +3,7 @@
 #include "deque.h"
 #include "murmur_hash.h"
 
-namespace nimble
+namespace inferno
 {
 template <typename T>
 uint64_t create_hash(const T& key)
@@ -200,4 +200,4 @@ private:
         }
     }
 };
-} // namespace nimble
+} // namespace inferno

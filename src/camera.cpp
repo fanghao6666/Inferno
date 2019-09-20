@@ -7,7 +7,7 @@
 #define PI 3.14159265359
 #define HALTON_SAMPLES 16
 
-namespace nimble
+namespace inferno
 {
 float halton_sequence(int base, int index)
 {
@@ -213,4 +213,4 @@ void Camera::apply_jitter()
         m_current_jitter = glm::vec2(0.0f);
     }
 }
-} // namespace nimble
+} // namespace inferno

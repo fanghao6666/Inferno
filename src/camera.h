@@ -6,7 +6,7 @@
 #include <memory>
 #include "geometry.h"
 
-namespace nimble
+namespace inferno
 {
 struct Viewport;
 
@@ -69,4 +69,4 @@ struct Camera
     bool aabb_inside_plane(Plane plane, glm::vec3 max_v, glm::vec3 min_v);
     void apply_jitter();
 };
-} // namespace nimble
+} // namespace inferno

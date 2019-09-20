@@ -8,7 +8,7 @@
 #include <vector>
 #include <string>
 
-namespace nimble
+namespace inferno
 {
 #define ENVIRONMENT_MAP_SIZE 1024
 
@@ -73,30 +73,30 @@ public:
     // Inline setters.
     inline void set_camera(std::shared_ptr<Camera> camera) { m_camera = camera; }
     inline void set_name(const std::string& name) { m_name = name; }
-    inline void set_environment_map(const std::shared_ptr<TextureCube>& texture) { m_env_map = texture; }
-    inline void set_irradiance_map(const std::shared_ptr<TextureCube>& texture) { m_irradiance_map = texture; }
-    inline void set_prefiltered_map(const std::shared_ptr<TextureCube>& texture) { m_prefiltered_map = texture; }
+    //inline void set_environment_map(const std::shared_ptr<TextureCube>& texture) { m_env_map = texture; }
+    //inline void set_irradiance_map(const std::shared_ptr<TextureCube>& texture) { m_irradiance_map = texture; }
+    //inline void set_prefiltered_map(const std::shared_ptr<TextureCube>& texture) { m_prefiltered_map = texture; }
 
     // Inline getters.
-    inline std::shared_ptr<Camera>       camera() { return m_camera; }
-    inline uint32_t                      entity_count() { return m_entities.size(); }
-    inline Entity*                       entities() { return &m_entities._objects[0]; }
-    inline uint32_t                      reflection_probe_count() { return m_reflection_probes.size(); }
-    inline ReflectionProbe*              reflection_probes() { return &m_reflection_probes._objects[0]; }
-    inline uint32_t                      gi_probe_count() { return m_gi_probes.size(); }
-    inline GIProbe*                      gi_probes() { return &m_gi_probes._objects[0]; }
-    inline uint32_t                      point_light_count() { return m_point_lights.size(); }
-    inline PointLight*                   point_lights() { return &m_point_lights._objects[0]; }
-    inline uint32_t                      spot_light_count() { return m_spot_lights.size(); }
-    inline SpotLight*                    spot_lights() { return &m_spot_lights._objects[0]; }
-    inline uint32_t                      directional_light_count() { return m_directional_lights.size(); }
-    inline DirectionalLight*             directional_lights() { return &m_directional_lights._objects[0]; }
-    inline std::string                   name() const { return m_name; }
-    inline std::shared_ptr<TextureCube>& env_map() { return m_env_map; }
-    inline std::shared_ptr<TextureCube>& irradiance_map() { return m_irradiance_map; }
-    inline std::shared_ptr<TextureCube>& prefiltered_map() { return m_prefiltered_map; }
-    inline std::shared_ptr<TextureCube>& reflection_probe_cubemap() { return m_reflection_probe_cubemap; }
-    inline std::shared_ptr<TextureCube>& gi_probe_cubemap() { return m_gi_probe_cubemap; }
+    inline std::shared_ptr<Camera> camera() { return m_camera; }
+    inline uint32_t                entity_count() { return m_entities.size(); }
+    inline Entity*                 entities() { return &m_entities._objects[0]; }
+    inline uint32_t                reflection_probe_count() { return m_reflection_probes.size(); }
+    inline ReflectionProbe*        reflection_probes() { return &m_reflection_probes._objects[0]; }
+    inline uint32_t                gi_probe_count() { return m_gi_probes.size(); }
+    inline GIProbe*                gi_probes() { return &m_gi_probes._objects[0]; }
+    inline uint32_t                point_light_count() { return m_point_lights.size(); }
+    inline PointLight*             point_lights() { return &m_point_lights._objects[0]; }
+    inline uint32_t                spot_light_count() { return m_spot_lights.size(); }
+    inline SpotLight*              spot_lights() { return &m_spot_lights._objects[0]; }
+    inline uint32_t                directional_light_count() { return m_directional_lights.size(); }
+    inline DirectionalLight*       directional_lights() { return &m_directional_lights._objects[0]; }
+    inline std::string             name() const { return m_name; }
+    //inline std::shared_ptr<TextureCube>& env_map() { return m_env_map; }
+    //inline std::shared_ptr<TextureCube>& irradiance_map() { return m_irradiance_map; }
+    //inline std::shared_ptr<TextureCube>& prefiltered_map() { return m_prefiltered_map; }
+    //inline std::shared_ptr<TextureCube>& reflection_probe_cubemap() { return m_reflection_probe_cubemap; }
+    //inline std::shared_ptr<TextureCube>& gi_probe_cubemap() { return m_gi_probe_cubemap; }
 
 private:
     std::string                                           m_name;
@@ -108,11 +108,11 @@ private:
     PackedArray<SpotLight, MAX_SPOT_LIGHTS>               m_spot_lights;
     PackedArray<DirectionalLight, MAX_DIRECTIONAL_LIGHTS> m_directional_lights;
     // PBR cubemaps common to the entire scene.
-    std::shared_ptr<TextureCube> m_env_map;
-    std::shared_ptr<TextureCube> m_irradiance_map;
-    std::shared_ptr<TextureCube> m_prefiltered_map;
+    //std::shared_ptr<TextureCube> m_env_map;
+    //std::shared_ptr<TextureCube> m_irradiance_map;
+    //std::shared_ptr<TextureCube> m_prefiltered_map;
     // Probe cubemap arrays
-    std::shared_ptr<TextureCube> m_reflection_probe_cubemap;
-    std::shared_ptr<TextureCube> m_gi_probe_cubemap;
+    //std::shared_ptr<TextureCube> m_reflection_probe_cubemap;
+    //std::shared_ptr<TextureCube> m_gi_probe_cubemap;
 };
-} // namespace nimble
+} // namespace inferno

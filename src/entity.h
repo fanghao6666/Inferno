@@ -1,29 +1,26 @@
 #pragma once
 
 #include "geometry.h"
-#include "mesh.h"
-#include "material.h"
-#include "ogl.h"
 #include "transform.h"
+#include "macros.h"
 #include <string>
+#include <vector>
 
 #define ENABLE_SUBMESH_CULLING
 
-namespace nimble
+namespace inferno
 {
 struct Entity
 {
     using ID = uint32_t;
 
-    ID                        id;
-    std::string               name;
-    std::shared_ptr<Material> override_mat;
-    std::shared_ptr<Mesh>     mesh;
-    OBB                       obb;
-    uint64_t                  visibility_flags;
-    bool                      dirty;
-    bool                      is_static;
-    Transform                 transform;
+    ID          id;
+    std::string name;
+    OBB         obb;
+    uint64_t    visibility_flags;
+    bool        dirty;
+    bool        is_static;
+    Transform   transform;
 
 #ifdef ENABLE_SUBMESH_CULLING
     std::vector<Sphere>   submesh_spheres;
@@ -64,4 +61,4 @@ struct Entity
     inline void set_submesh_invisible(const uint32_t& submesh_index, const uint32_t& view_index) { CLEAR_BIT_64(submesh_visibility_flags[submesh_index], view_index); }
 #endif
 };
-} // namespace nimble
+} // namespace inferno

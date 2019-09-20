@@ -6,7 +6,7 @@
 #    include <sys/time.h>
 #endif
 
-namespace nimble
+namespace inferno
 {
 class Timer
 {
@@ -34,4 +34,4 @@ private:
     timeval _end_count;
 #endif
 };
-} // namespace nimble
+} // namespace inferno

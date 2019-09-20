@@ -13,7 +13,7 @@
 
 #define LOG_SEPERATOR "********************************************************************************************************\n"
 
-namespace nimble
+namespace inferno
 {
 namespace logger
 {
@@ -322,4 +322,4 @@ void flush()
     }
 }
 } // namespace logger
-} // namespace nimble
+} // namespace inferno

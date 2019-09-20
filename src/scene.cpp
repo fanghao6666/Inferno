@@ -1,11 +1,10 @@
 #include "scene.h"
 #include <json.hpp>
 #include <gtc/matrix_transform.hpp>
-#include "material.h"
 #include "macros.h"
 #include "utility.h"
 
-namespace nimble
+namespace inferno
 {
 // -----------------------------------------------------------------------------------------------------------------------------------
 
@@ -99,7 +98,7 @@ AABB Scene::aabb()
 {
     AABB out = { glm::vec3(FLT_MAX), glm::vec3(-FLT_MAX) };
 
-    for (uint32_t i = 0; i < m_entities.size(); i++)
+    /*for (uint32_t i = 0; i < m_entities.size(); i++)
     {
         AABB b = m_entities._objects[i].mesh->aabb();
 
@@ -119,7 +118,7 @@ AABB Scene::aabb()
             out.max.y = max.y;
         if (max.z > out.max.z)
             out.max.z = max.z;
-    }
+    }*/
 
     return out;
 }
@@ -324,4 +323,4 @@ void Scene::update()
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------
-} // namespace nimble
+} // namespace inferno

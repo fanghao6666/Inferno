@@ -1,6 +1,5 @@
 #pragma once
 
-#include "debug_draw.h"
 #include <stdint.h>
 #include <array>
 #include <string>
@@ -13,12 +12,9 @@
 #include "imgui.h"
 #include "logger.h"
 #include "timer.h"
-#include "renderer.h"
-#include "resource_manager.h"
-#include "viewport_manager.h"
 
 // Main method macro. Use this at the bottom of any cpp file.
-#define NIMBLE_DECLARE_MAIN(class_name)    \
+#define INFERNO_DECLARE_MAIN(class_name)    \
     int main(int argc, const char* argv[]) \
     {                                      \
         class_name app;                    \
@@ -29,17 +25,16 @@
 #define MAX_KEYS 1024
 #define MAX_MOUSE_BUTTONS 5
 
-namespace nimble
+namespace inferno
 {
 struct AppSettings
 {
     bool        resizable    = true;
     bool        maximized    = false;
     int         refresh_rate = 60;
-    int         major_ver    = 4;
     int         width        = 800;
     int         height       = 600;
-    std::string title        = "Nimble";
+    std::string title        = "Inferno";
 };
 
 class Application
@@ -113,9 +108,5 @@ protected:
     std::array<bool, MAX_MOUSE_BUTTONS> m_mouse_buttons;
     GLFWwindow*                         m_window;
     Timer                               m_timer;
-    DebugDraw                           m_debug_draw;
-    ResourceManager                     m_resource_manager;
-    ViewportManager                     m_viewport_manager;
-    Renderer                            m_renderer;
 };
-} // namespace nimble
+} // namespace inferno

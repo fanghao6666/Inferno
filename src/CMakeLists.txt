@@ -27,7 +27,7 @@ add_executable(Inferno ${INFERNO_HEADERS} ${INFERNO_SOURCE})
 
 target_link_libraries(Inferno AssetCoreRuntime)
 target_link_libraries(Inferno glfw)
-target_link_libraries(Inferno ${VULKAN_LIBRARY}))
+target_link_libraries(Inferno ${VULKAN_LIBRARY})
 
 if (APPLE)
     add_custom_command(TARGET Inferno POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/src/shader $<TARGET_FILE_DIR:Inferno>/Inferno.app/Contents/Resources/assets/shader)
@@ -36,5 +36,5 @@ else()
 endif()
 
 if(CLANG_FORMAT_EXE)
-    add_custom_target(clang-format-project-files COMMAND ${CLANG_FORMAT_EXE} -i -style=file ${INFERNO_HEADERS} ${INFERNO_SOURCE})
+    add_custom_target(Inferno-clang-format-project-files COMMAND ${CLANG_FORMAT_EXE} -i -style=file ${INFERNO_HEADERS} ${INFERNO_SOURCE})
 endif()

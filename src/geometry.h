@@ -2,7 +2,7 @@
 
 #include <glm.hpp>
 
-namespace nimble
+namespace inferno
 {
 #define CMP(x, y) \
     (fabsf(x - y) <= FLT_EPSILON * fmaxf(1.0f, fmaxf(fabsf(x), fabsf(y))))
@@ -260,4 +260,4 @@ inline Ray picking_ray(const glm::vec2& viewportPoint, const glm::vec2& viewport
 
     return Ray(origin, normal);
 }
-} // namespace nimble
+} // namespace inferno
