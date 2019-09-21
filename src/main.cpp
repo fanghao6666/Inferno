@@ -1,25 +1,37 @@
 #include "application.h"
+#include "vk.h"
 
-class InfernoApp : public inferno::Application
+#include <memory>
+
+namespace inferno
+{
+const std::vector<const char*> g_validation_layers = 
+{
+    "VK_LAYER_LUNARG_standard_validation"
+};
+
+class InfernoApp : public Application
 {
 public:
     InfernoApp()
-	{
+    {
+        m_instance = std::make_unique<vk::Instance>("Inferno", g_validation_layers);
+    }
 
-	}
-
-	~InfernoApp()
-	{
-
-	}
+    ~InfernoApp()
+    {
+    }
 
 protected:
-	// Intial app settings. Override this to set defaults.
-	inferno::AppSettings intial_app_settings() override
-	{
-		inferno::AppSettings settings;
-		return settings;
-	}
-};
+    inferno::AppSettings intial_app_settings() override
+    {
+        inferno::AppSettings settings;
+        return settings;
+    }
 
-INFERNO_DECLARE_MAIN(InfernoApp);
+private:
+    std::unique_ptr<vk::Instance> m_instance;
+};
+}
+
+INFERNO_DECLARE_MAIN(inferno::InfernoApp);

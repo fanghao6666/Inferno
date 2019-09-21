@@ -20,10 +20,12 @@ set(GLFW_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}/external/glfw/include")
 set(IMGUI_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}/external/imgui")
 set(IMGUIZMO_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}/external/ImGuizmo")
 
+find_package(Vulkan REQUIRED)
 
 include_directories("${ASSET_CORE_INCLUDES}"
 					"${GLFW_INCLUDE_DIRS}"
 					"${IMGUI_INCLUDE_DIRS}"
-					"${IMGUIZMO_INCLUDE_DIRS}")
+					"${IMGUIZMO_INCLUDE_DIRS}"
+					"${VULKAN_INCLUDE_DIR}")
 
 add_subdirectory(src)
