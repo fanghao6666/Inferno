@@ -25,14 +25,14 @@
 #define INFERNO_ZERO_MEMORY(x) memset(&x, 0, sizeof(x))
 
 #define INFERNO_SAFE_DELETE(x) \
-    if (x)                    \
-    {                         \
-        delete x;             \
-        x = nullptr;          \
+    if (x)                     \
+    {                          \
+        delete x;              \
+        x = nullptr;           \
     }
 #define INFERNO_SAFE_DELETE_ARRAY(x) \
-    if (x)                          \
-    {                               \
-        delete[] x;                 \
-        x = nullptr;                \
+    if (x)                           \
+    {                                \
+        delete[] x;                  \
+        x = nullptr;                 \
     }

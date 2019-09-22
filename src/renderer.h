@@ -4,12 +4,9 @@
 
 namespace inferno
 {
-	class Renderer
-	{
-	public:
-	
-
-	private:
-		
-	};
+class Renderer
+{
+public:
+private:
+};
 } // namespace inferno

@@ -71,7 +71,6 @@ bool Application::init_base(int argc, const char* argv[])
     m_height          = settings.height;
     m_title           = settings.title;
 
-
     if (glfwInit() != GLFW_TRUE)
     {
         INFERNO_LOG_FATAL("Failed to initialize GLFW");
@@ -99,7 +98,6 @@ bool Application::init_base(int argc, const char* argv[])
     glfwSetWindowSizeCallback(m_window, window_size_callback_glfw);
     glfwSetWindowUserPointer(m_window, this);
 
-
     INFERNO_LOG_INFO("Successfully initialized platform!");
 
     IMGUI_CHECKVERSION();
@@ -120,7 +118,7 @@ bool Application::init_base(int argc, const char* argv[])
     ImGui::StyleColorsDark();
 
     // Setup Platform/Renderer bindings
-   /* ImGui_ImplGlfw_InitForOpenGL(m_window, true);
+    /* ImGui_ImplGlfw_InitForOpenGL(m_window, true);
     ImGui_ImplOpenGL3_Init(glsl_version);*/
 
     int display_w, display_h;
@@ -163,7 +161,7 @@ void Application::shutdown_base()
     //m_debug_draw.shutdown();
 
     // Shutdown ImGui.
-   /* ImGui_ImplOpenGL3_Shutdown();
+    /* ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();*/
     ImGui::DestroyContext();
 
@@ -184,7 +182,7 @@ void Application::begin_frame()
 
     glfwPollEvents();
 
-  /*  ImGui_ImplOpenGL3_NewFrame();
+    /*  ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();*/
     ImGui::NewFrame();
     //profiler::begin_frame();

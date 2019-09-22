@@ -14,7 +14,7 @@
 #include "timer.h"
 
 // Main method macro. Use this at the bottom of any cpp file.
-#define INFERNO_DECLARE_MAIN(class_name)    \
+#define INFERNO_DECLARE_MAIN(class_name)   \
     int main(int argc, const char* argv[]) \
     {                                      \
         class_name app;                    \
