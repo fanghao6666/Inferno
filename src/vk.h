@@ -51,15 +51,15 @@ class Backend
 public:
     using Ptr = std::shared_ptr<Backend>;
 
-	static Backend::Ptr create(GLFWwindow* window, bool enable_validation_layers = false);
+    static Backend::Ptr create(GLFWwindow* window, bool enable_validation_layers = false);
 
     ~Backend();
 
-	VkDevice        device();
-	VmaAllocator_T* allocator();
+    VkDevice        device();
+    VmaAllocator_T* allocator();
 
 private:
-	Backend(GLFWwindow* window, bool enable_validation_layers = false);
+    Backend(GLFWwindow* window, bool enable_validation_layers = false);
     bool                     check_validation_layer_support(std::vector<const char*> layers);
     bool                     check_device_extension_support(VkPhysicalDevice device);
     void                     query_swap_chain_support(VkPhysicalDevice device, SwapChainSupportDetails& details);
@@ -78,24 +78,24 @@ private:
     VkExtent2D               choose_swap_extent(const VkSurfaceCapabilitiesKHR& capabilities);
 
 private:
-    GLFWwindow*              m_window                = nullptr;
-    VkInstance               m_vk_instance           = nullptr;
-    VkDevice                 m_vk_device             = nullptr;
-    VkQueue                  m_vk_graphics_queue     = nullptr;
-    VkQueue                  m_vk_compute_queue      = nullptr;
-    VkQueue                  m_vk_transfer_queue     = nullptr;
-    VkQueue                  m_vk_presentation_queue = nullptr;
-    VkPhysicalDevice         m_vk_physical_device    = nullptr;
-    VkSurfaceKHR             m_vk_surface            = nullptr;
-    VkSwapchainKHR           m_vk_swap_chain         = nullptr;
-    VkDebugUtilsMessengerEXT m_vk_debug_messenger    = nullptr;
-    VmaAllocator_T*          m_vma_allocator         = nullptr;
-    SwapChainSupportDetails  m_swapchain_details;
-    QueueInfos               m_selected_queues;
-    VkFormat m_swap_chain_image_format;
-    VkExtent2D                    m_swap_chain_extent;
-    std::vector<std::shared_ptr<Image>> m_swap_chain_images;
-    std::vector<std::shared_ptr<ImageView>> m_swap_chain_image_views;
+    GLFWwindow*                               m_window                = nullptr;
+    VkInstance                                m_vk_instance           = nullptr;
+    VkDevice                                  m_vk_device             = nullptr;
+    VkQueue                                   m_vk_graphics_queue     = nullptr;
+    VkQueue                                   m_vk_compute_queue      = nullptr;
+    VkQueue                                   m_vk_transfer_queue     = nullptr;
+    VkQueue                                   m_vk_presentation_queue = nullptr;
+    VkPhysicalDevice                          m_vk_physical_device    = nullptr;
+    VkSurfaceKHR                              m_vk_surface            = nullptr;
+    VkSwapchainKHR                            m_vk_swap_chain         = nullptr;
+    VkDebugUtilsMessengerEXT                  m_vk_debug_messenger    = nullptr;
+    VmaAllocator_T*                           m_vma_allocator         = nullptr;
+    SwapChainSupportDetails                   m_swapchain_details;
+    QueueInfos                                m_selected_queues;
+    VkFormat                                  m_swap_chain_image_format;
+    VkExtent2D                                m_swap_chain_extent;
+    std::vector<std::shared_ptr<Image>>       m_swap_chain_images;
+    std::vector<std::shared_ptr<ImageView>>   m_swap_chain_image_views;
     std::vector<std::shared_ptr<Framebuffer>> m_swap_chain_framebuffers;
     std::shared_ptr<Image>                    m_back_buffer_depth      = nullptr;
     std::shared_ptr<ImageView>                m_back_buffer_depth_view = nullptr;
@@ -108,7 +108,7 @@ public:
 
 protected:
     std::weak_ptr<Backend> m_vk_backend;
-    VkDevice               m_vk_device  = nullptr;
+    VkDevice               m_vk_device = nullptr;
 };
 
 class Image : public Object

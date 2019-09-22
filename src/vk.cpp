@@ -94,7 +94,8 @@ bool QueueInfos::transfer()
 
 // -----------------------------------------------------------------------------------------------------------------------------------
 
-Object::Object(Backend::Ptr backend, VkDevice device) : m_vk_backend(backend), m_vk_device(device)
+Object::Object(Backend::Ptr backend, VkDevice device) :
+    m_vk_backend(backend), m_vk_device(device)
 {
 }
 
@@ -132,14 +133,14 @@ Image::Image(Backend::Ptr backend, uint32_t width, uint32_t height, uint32_t dep
     image_info.format        = format;
     image_info.tiling        = VK_IMAGE_TILING_OPTIMAL;
     image_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    image_info.usage = usage;
+    image_info.usage         = usage;
     image_info.usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
     image_info.usage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
     image_info.samples     = sample_count;
     image_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-	VmaAllocationInfo       alloc_info;
-	VmaAllocationCreateInfo alloc_create_info;
+    VmaAllocationInfo       alloc_info;
+    VmaAllocationCreateInfo alloc_create_info;
     INFERNO_ZERO_MEMORY(alloc_create_info);
 
     alloc_create_info.usage = memory_usage;
@@ -151,7 +152,7 @@ Image::Image(Backend::Ptr backend, uint32_t width, uint32_t height, uint32_t dep
         throw std::runtime_error("(Vulkan) Failed to create Image.");
     }
 
-	m_vk_device_memory = alloc_info.deviceMemory;
+    m_vk_device_memory = alloc_info.deviceMemory;
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------
@@ -159,7 +160,6 @@ Image::Image(Backend::Ptr backend, uint32_t width, uint32_t height, uint32_t dep
 Image::Image(VkDevice device, VkImage image, uint32_t width, uint32_t height, VkFormat format, VkSampleCountFlags sample_count) :
     Object(nullptr, device)
 {
-    
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------
@@ -199,9 +199,9 @@ ImageView::ImageView(Backend::Ptr backend, Image::Ptr image, VkImageViewType vie
     VkImageViewCreateInfo info;
     INFERNO_ZERO_MEMORY(info);
 
-	info.sType                           = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-    info.image                           = image->handle();
-    info.viewType                        = view_type;
+    info.sType    = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+    info.image    = image->handle();
+    info.viewType = view_type;
     //info.format                          = image->format();
     //info.subresourceRange.aspectMask     = image->aspect_flags();
     info.subresourceRange.baseMipLevel   = 0;
@@ -228,7 +228,6 @@ ImageView::ImageView(VkDevice device, Image::Ptr image, VkImageViewType view_typ
 
 ImageView::~ImageView()
 {
-
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------
@@ -333,8 +332,8 @@ VkDevice Backend::device()
 // -----------------------------------------------------------------------------------------------------------------------------------
 
 VmaAllocator_T* Backend::allocator()
-{	
-	return m_vma_allocator;
+{
+    return m_vma_allocator;
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------
@@ -484,7 +483,7 @@ bool Backend::find_physical_device()
     // Try to find a discrete GPU...
     for (const auto& device : devices)
     {
-        QueueInfos infos;
+        QueueInfos              infos;
         SwapChainSupportDetails details;
 
         if (is_device_suitable(device, VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU, infos, details))
@@ -499,7 +498,7 @@ bool Backend::find_physical_device()
     // ...If not, try to find an integrated GPU...
     for (const auto& device : devices)
     {
-        QueueInfos infos;
+        QueueInfos              infos;
         SwapChainSupportDetails details;
 
         if (is_device_suitable(device, VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU, infos, details))
@@ -525,7 +524,7 @@ bool Backend::is_device_suitable(VkPhysicalDevice device, VkPhysicalDeviceType t
 
     if (properties.deviceType == type)
     {
-        bool                    extensions_supported = check_device_extension_support(device);
+        bool extensions_supported = check_device_extension_support(device);
         query_swap_chain_support(device, details);
 
         if (details.format.size() > 0 && details.present_modes.size() > 0 && extensions_supported)
@@ -867,7 +866,7 @@ bool Backend::create_swapchain()
     if (vkGetSwapchainImagesKHR(m_vk_device, m_vk_swap_chain, &swap_image_count, &images[0]) != VK_SUCCESS)
         return false;
 
-	// @TODO: Create back buffer depth image/image view
+    // @TODO: Create back buffer depth image/image view
 
     for (int i = 0; i < swap_image_count; i++)
     {
