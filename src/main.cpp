@@ -5,33 +5,36 @@
 
 namespace inferno
 {
-const std::vector<const char*> g_validation_layers = 
-{
-    "VK_LAYER_LUNARG_standard_validation"
-};
 
-class InfernoApp : public Application
+class Runtime : public Application
 {
 public:
-    InfernoApp()
+    Runtime()
     {
-        m_instance = std::make_unique<vk::Instance>("Inferno", g_validation_layers);
+        
     }
 
-    ~InfernoApp()
+    ~Runtime()
     {
     }
 
 protected:
-    inferno::AppSettings intial_app_settings() override
+	bool init(int argc, const char* argv[]) override
+	{
+		m_backend = std::make_unique<vk::Backend>(m_window, true);
+		
+		return true;
+	}
+
+    AppSettings intial_app_settings() override
     {
-        inferno::AppSettings settings;
+        AppSettings settings;
         return settings;
     }
 
 private:
-    std::unique_ptr<vk::Instance> m_instance;
+    std::unique_ptr<vk::Backend> m_backend;
 };
 }
 
-INFERNO_DECLARE_MAIN(inferno::InfernoApp);
+INFERNO_DECLARE_MAIN(inferno::Runtime);
