@@ -19,7 +19,7 @@ public:
 protected:
     bool init(int argc, const char* argv[]) override
     {
-        m_backend = std::make_unique<vk::Backend>(m_window, true);
+        m_backend = vk::Backend::create(m_window, true);
 
         return true;
     }
@@ -31,7 +31,7 @@ protected:
     }
 
 private:
-    std::unique_ptr<vk::Backend> m_backend;
+    vk::Backend::Ptr m_backend;
 };
 } // namespace inferno
 

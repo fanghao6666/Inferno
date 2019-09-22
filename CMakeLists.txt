@@ -19,6 +19,7 @@ add_subdirectory(external/glfw)
 set(GLFW_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}/external/glfw/include")
 set(IMGUI_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}/external/imgui")
 set(IMGUIZMO_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}/external/ImGuizmo")
+set(VMA_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}/external/VulkanMemoryAllocator/src")
 
 find_package(Vulkan REQUIRED)
 
@@ -26,6 +27,7 @@ include_directories("${ASSET_CORE_INCLUDES}"
 					"${GLFW_INCLUDE_DIRS}"
 					"${IMGUI_INCLUDE_DIRS}"
 					"${IMGUIZMO_INCLUDE_DIRS}"
-					"${VULKAN_INCLUDE_DIR}")
+					"${VULKAN_INCLUDE_DIR}"
+					"${VMA_INCLUDE_DIRS}")
 
 add_subdirectory(src)
