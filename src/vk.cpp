@@ -292,7 +292,7 @@ Framebuffer::Framebuffer(Backend::Ptr backend, RenderPass::Ptr render_pass, std:
 	if (vkCreateFramebuffer(backend->device(), &frameBuffer_create_info, nullptr, &m_vk_framebuffer) != VK_SUCCESS)
     {
             INFERNO_LOG_FATAL("(Vulkan) Failed to create Framebuffer.");
-            throw std::runtime_error("(Vulkan) Destructing after Framebuffer.");
+            throw std::runtime_error("(Vulkan) Failed to create Framebuffer.");
     }
 }
 
@@ -309,6 +309,83 @@ Framebuffer::~Framebuffer()
     auto backend = m_vk_backend.lock();
 
     vkDestroyFramebuffer(backend->device(), m_vk_framebuffer, nullptr);
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+Buffer::Ptr Buffer::create(Backend::Ptr backend, VkBufferUsageFlags usage, size_t size, VmaMemoryUsage memory_usage, VkFlags create_flags)
+{
+    return std::shared_ptr<Buffer>(new Buffer(backend, usage, size, memory_usage, create_flags));
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+Buffer::Buffer(Backend::Ptr backend, VkBufferUsageFlags usage, size_t size, VmaMemoryUsage memory_usage, VkFlags create_flags) :
+    Object(backend), m_size(size)
+{
+    m_vma_allocator = backend->allocator();
+
+    VkBufferCreateInfo buffer_info;
+    INFERNO_ZERO_MEMORY(buffer_info);
+
+    buffer_info.sType                 = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    buffer_info.size                  = size;
+    buffer_info.usage                 = usage;
+    buffer_info.sharingMode           = VK_SHARING_MODE_EXCLUSIVE;
+    buffer_info.queueFamilyIndexCount = 0;
+    buffer_info.pQueueFamilyIndices   = nullptr;
+
+    VkMemoryPropertyFlags memory_prop_flags = 0;
+    VkBufferUsageFlags    usage_flags       = usage;
+    
+    if (memory_usage == VMA_MEMORY_USAGE_CPU_ONLY)
+    {
+        memory_prop_flags |= VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
+        memory_prop_flags |= VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+        usage_flags |= VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+    }
+    else if (memory_usage == VMA_MEMORY_USAGE_GPU_ONLY)
+    {
+        memory_prop_flags |= VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+        usage_flags |= VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+    }
+    else if (memory_usage == VMA_MEMORY_USAGE_CPU_TO_GPU)
+    {
+        memory_prop_flags |= VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
+        memory_prop_flags |= VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+    }
+    else if (memory_usage == VMA_MEMORY_USAGE_GPU_TO_CPU)
+        memory_prop_flags |= VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
+
+    VmaAllocationInfo vma_alloc_info;
+
+    VmaAllocationCreateInfo alloc_create_info;
+    INFERNO_ZERO_MEMORY(alloc_create_info);
+
+    alloc_create_info.usage                   = memory_usage;
+    alloc_create_info.flags                   = create_flags;
+    alloc_create_info.requiredFlags           = memory_prop_flags;
+    alloc_create_info.preferredFlags          = 0;
+    alloc_create_info.memoryTypeBits          = 0;
+    alloc_create_info.pool                    = VK_NULL_HANDLE;
+
+    if (vmaCreateBuffer(m_vma_allocator, &buffer_info, &alloc_create_info, &m_vk_buffer, &m_vma_allocation, &vma_alloc_info) != VK_SUCCESS)
+    {
+        INFERNO_LOG_FATAL("(Vulkan) Failed to create Buffer.");
+        throw std::runtime_error("(Vulkan) Failed to create Buffer.");
+    }
+
+	m_vk_device_memory = vma_alloc_info.deviceMemory;
+
+    if (create_flags & VMA_ALLOCATION_CREATE_MAPPED_BIT)
+        m_mapped_ptr = vma_alloc_info.pMappedData;
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+Buffer::~Buffer()
+{
+    vmaDestroyBuffer(m_vma_allocator, m_vk_buffer, m_vma_allocation);
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------
@@ -533,6 +610,35 @@ VkDevice Backend::device()
 VmaAllocator_T* Backend::allocator()
 {
     return m_vma_allocator;
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+VkFormat Backend::find_supported_format(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features)
+{
+    for (VkFormat format : candidates)
+    {
+        VkFormatProperties props;
+        vkGetPhysicalDeviceFormatProperties(m_vk_physical_device, format, &props);
+
+        if (tiling == VK_IMAGE_TILING_LINEAR && (props.linearTilingFeatures & features) == features)
+        {
+            return format;
+        }
+        else if (tiling == VK_IMAGE_TILING_OPTIMAL && (props.optimalTilingFeatures & features) == features)
+        {
+            return format;
+        }
+    }
+
+    throw std::runtime_error("Failed to find supported format!");
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+VkFormat Backend::find_depth_format()
+{
+    return find_supported_format({ VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT }, VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------
@@ -1067,7 +1173,7 @@ bool Backend::create_swapchain(std::shared_ptr<Backend> backend)
     if (vkGetSwapchainImagesKHR(m_vk_device, m_vk_swap_chain, &swap_image_count, &images[0]) != VK_SUCCESS)
         return false;
 
-    m_swap_chain_depth_format = VK_FORMAT_D32_SFLOAT;
+    m_swap_chain_depth_format = find_depth_format();
 
     m_swap_chain_depth = Image::create(backend,
                                        VK_IMAGE_TYPE_2D,
@@ -1076,7 +1182,7 @@ bool Backend::create_swapchain(std::shared_ptr<Backend> backend)
                                        1,
                                        1,
                                        1,
-                                       VK_FORMAT_D32_SFLOAT,
+                                       m_swap_chain_depth_format,
                                        VMA_MEMORY_USAGE_GPU_ONLY,
                                        VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
                                        VK_SAMPLE_COUNT_1_BIT);

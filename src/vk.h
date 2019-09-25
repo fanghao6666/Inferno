@@ -59,9 +59,11 @@ public:
 
     VkDevice        device();
     VmaAllocator_T* allocator();
+    VkFormat        find_supported_format(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
 
 private:
     Backend(GLFWwindow* window, bool enable_validation_layers = false);
+    VkFormat find_depth_format();
     bool                     check_validation_layer_support(std::vector<const char*> layers);
     bool                     check_device_extension_support(VkPhysicalDevice device);
     void                     query_swap_chain_support(VkPhysicalDevice device, SwapChainSupportDetails& details);
@@ -215,6 +217,24 @@ class Buffer : public Object
 {
 public:
     using Ptr = std::shared_ptr<Buffer>;
+
+	static Buffer::Ptr create(Backend::Ptr backend, VkBufferUsageFlags usage, size_t size, VmaMemoryUsage memory_usage, VkFlags create_flags);
+
+    ~Buffer();
+
+	inline VkBuffer handle() { return m_vk_buffer; }
+    inline size_t   size() { return m_size; } 
+
+private:
+    Buffer(Backend::Ptr backend, VkBufferUsageFlags usage, size_t size, VmaMemoryUsage memory_usage, VkFlags create_flags);
+
+private:
+    size_t           m_size;
+    void*            m_mapped_ptr       = nullptr;
+	VkBuffer m_vk_buffer = nullptr;
+	VkDeviceMemory   m_vk_device_memory = nullptr;
+	VmaAllocator_T*  m_vma_allocator    = nullptr;
+	VmaAllocation_T* m_vma_allocation   = nullptr;
 };
 
 class CommandPool : public Object
