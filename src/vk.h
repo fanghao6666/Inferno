@@ -17,6 +17,8 @@ namespace vk
 class Image;
 class ImageView;
 class Framebuffer;
+class RenderPass;
+class CommandBuffer;
 
 struct SwapChainSupportDetails
 {
@@ -72,7 +74,8 @@ private:
     bool                     find_queues(VkPhysicalDevice device, QueueInfos& infos);
     bool                     is_queue_compatible(VkQueueFlags current_queue_flags, int32_t graphics, int32_t compute, int32_t transfer);
     bool                     create_logical_device();
-    bool                     create_swapchain();
+    bool                     create_swapchain(std::shared_ptr<Backend> backend);
+    void                     create_render_pass(std::shared_ptr<Backend> backend);
     VkSurfaceFormatKHR       choose_swap_surface_format(const std::vector<VkSurfaceFormatKHR>& available_formats);
     VkPresentModeKHR         choose_swap_present_mode(const std::vector<VkPresentModeKHR>& available_modes);
     VkExtent2D               choose_swap_extent(const VkSurfaceCapabilitiesKHR& capabilities);
@@ -93,12 +96,14 @@ private:
     SwapChainSupportDetails                   m_swapchain_details;
     QueueInfos                                m_selected_queues;
     VkFormat                                  m_swap_chain_image_format;
+    VkFormat                                  m_swap_chain_depth_format;
     VkExtent2D                                m_swap_chain_extent;
+    std::shared_ptr<RenderPass>               m_swap_chain_render_pass;
     std::vector<std::shared_ptr<Image>>       m_swap_chain_images;
     std::vector<std::shared_ptr<ImageView>>   m_swap_chain_image_views;
     std::vector<std::shared_ptr<Framebuffer>> m_swap_chain_framebuffers;
-    std::shared_ptr<Image>                    m_back_buffer_depth      = nullptr;
-    std::shared_ptr<ImageView>                m_back_buffer_depth_view = nullptr;
+    std::shared_ptr<Image>                    m_swap_chain_depth      = nullptr;
+    std::shared_ptr<ImageView>                m_swap_chain_depth_view = nullptr;
 };
 
 class Object
@@ -116,30 +121,41 @@ class Image : public Object
 public:
     using Ptr = std::shared_ptr<Image>;
 
-    static Image::Ptr create(Backend::Ptr backend, uint32_t width, uint32_t height, uint32_t depth, uint32_t mip_levels, uint32_t array_size, VkFormat format, VmaMemoryUsage memory_usage, VkImageUsageFlagBits usage, VkSampleCountFlagBits sample_count);
-    static Image::Ptr create(VkDevice device, VkImage image, uint32_t width, uint32_t height, VkFormat format, VkSampleCountFlags sample_count);
+    static Image::Ptr create(Backend::Ptr backend, VkImageType type, uint32_t width, uint32_t height, uint32_t depth, uint32_t mip_levels, uint32_t array_size, VkFormat format, VmaMemoryUsage memory_usage, VkImageUsageFlagBits usage, VkSampleCountFlagBits sample_count, VkImageLayout initial_layout = VK_IMAGE_LAYOUT_UNDEFINED);
+    static Image::Ptr create_from_swapchain(Backend::Ptr backend, VkImage image, VkImageType type, uint32_t width, uint32_t height, uint32_t depth, uint32_t mip_levels, uint32_t array_size, VkFormat format, VmaMemoryUsage memory_usage, VkImageUsageFlagBits usage, VkSampleCountFlagBits sample_count);
 
     ~Image();
-    VkImage handle();
+    inline VkImageType        type() { return m_type; }
+    inline VkImage            handle() { return m_vk_image; }
+    inline uint32_t           width() { return m_width; }
+    inline uint32_t           height() { return m_height; }
+    inline uint32_t           depth() { return m_depth; }
+    inline uint32_t           mip_levels() { return m_mip_levels; }
+    inline uint32_t           array_size() { return m_array_size; }
+    inline VkFormat           format() { return m_format; }
+    inline VkImageUsageFlags  usage() { return m_usage; }
+    inline VmaMemoryUsage     memory_usage() { return m_memory_usage; }
+    inline VkSampleCountFlags sample_count() { return m_sample_count; }
 
 private:
-    Image(Backend::Ptr backend, uint32_t width, uint32_t height, uint32_t depth, uint32_t mip_levels, uint32_t array_size, VkFormat format, VmaMemoryUsage memory_usage, VkImageUsageFlagBits usage, VkSampleCountFlagBits sample_count);
-    Image(VkDevice device, VkImage image, uint32_t width, uint32_t height, VkFormat format, VkSampleCountFlags sample_count);
+    Image(Backend::Ptr backend, VkImageType type, uint32_t width, uint32_t height, uint32_t depth, uint32_t mip_levels, uint32_t array_size, VkFormat format, VmaMemoryUsage memory_usage, VkImageUsageFlagBits usage, VkSampleCountFlagBits sample_count, VkImageLayout initial_layout);
+    Image(Backend::Ptr backend, VkImage image, VkImageType type, uint32_t width, uint32_t height, uint32_t depth, uint32_t mip_levels, uint32_t array_size, VkFormat format, VmaMemoryUsage memory_usage, VkImageUsageFlagBits usage, VkSampleCountFlagBits sample_count);
 
 private:
-    uint32_t              m_width;
-    uint32_t              m_height;
-    uint32_t              m_depth;
-    uint32_t              m_mip_levels;
-    uint32_t              m_array_size;
-    VkFormat              m_format;
-    VkImageUsageFlagBits  m_usage;
-    VmaMemoryUsage        m_memory_usage;
-    VkSampleCountFlagBits m_sample_count;
-    VkImage               m_vk_image         = nullptr;
-    VkDeviceMemory        m_vk_device_memory = nullptr;
-    VmaAllocator_T*       m_vma_allocator    = nullptr;
-    VmaAllocation_T*      m_vma_allocation   = nullptr;
+    uint32_t           m_width;
+    uint32_t           m_height;
+    uint32_t           m_depth;
+    uint32_t           m_mip_levels;
+    uint32_t           m_array_size;
+    VkFormat           m_format;
+    VkImageUsageFlags  m_usage;
+    VmaMemoryUsage     m_memory_usage;
+    VkSampleCountFlags m_sample_count;
+    VkImageType        m_type;
+    VkImage            m_vk_image         = nullptr;
+    VkDeviceMemory     m_vk_device_memory = nullptr;
+    VmaAllocator_T*    m_vma_allocator    = nullptr;
+    VmaAllocation_T*   m_vma_allocation   = nullptr;
 };
 
 class ImageView : public Object
@@ -147,17 +163,30 @@ class ImageView : public Object
 public:
     using Ptr = std::shared_ptr<ImageView>;
 
-    static ImageView::Ptr create(Backend::Ptr backend, Image::Ptr image, VkImageViewType view_type, uint32_t base_mip_level = 0, uint32_t level_count = 1, uint32_t base_array_layer = 0, uint32_t layer_count = 1);
-    static ImageView::Ptr create(VkDevice device, Image::Ptr image, VkImageViewType view_type, uint32_t base_mip_level = 0, uint32_t level_count = 1, uint32_t base_array_layer = 0, uint32_t layer_count = 1);
+    static ImageView::Ptr create(Backend::Ptr backend, Image::Ptr image, VkImageViewType view_type, VkImageAspectFlags aspect_flags, uint32_t base_mip_level = 0, uint32_t level_count = 1, uint32_t base_array_layer = 0, uint32_t layer_count = 1);
 
     ~ImageView();
 
 private:
-    ImageView(Backend::Ptr backend, Image::Ptr image, VkImageViewType view_type, uint32_t base_mip_level = 0, uint32_t level_count = 1, uint32_t base_array_layer = 0, uint32_t layer_count = 1);
-    ImageView(VkDevice device, Image::Ptr image, VkImageViewType view_type, uint32_t base_mip_level = 0, uint32_t level_count = 1, uint32_t base_array_layer = 0, uint32_t layer_count = 1);
+    ImageView(Backend::Ptr backend, Image::Ptr image, VkImageViewType view_type, VkImageAspectFlags aspect_flags, uint32_t base_mip_level = 0, uint32_t level_count = 1, uint32_t base_array_layer = 0, uint32_t layer_count = 1);
 
 private:
     VkImageView m_vk_image_view;
+};
+
+class RenderPass : public Object
+{
+public:
+    using Ptr = std::shared_ptr<RenderPass>;
+
+	static RenderPass::Ptr create(Backend::Ptr backend, std::vector<VkAttachmentDescription> attachment_descs, std::vector<VkSubpassDescription> subpass_descs, std::vector<VkSubpassDependency> subpass_deps);
+    ~RenderPass(); 
+
+private:
+	RenderPass(Backend::Ptr backend, std::vector<VkAttachmentDescription> attachment_descs, std::vector<VkSubpassDescription> subpass_descs, std::vector<VkSubpassDependency> subpass_deps);
+
+private:
+	VkRenderPass m_vk_render_pass = nullptr;
 };
 
 class Framebuffer
@@ -172,8 +201,44 @@ public:
     using Ptr = std::shared_ptr<Buffer>;
 };
 
-class CommandBuffer
+class CommandPool : public Object
 {
+public:
+    using Ptr = std::shared_ptr<CommandPool>;
+
+    
+	static CommandPool::Ptr create(Backend::Ptr backend, uint32_t queue_family_index);
+
+    ~CommandPool();
+
+	inline VkCommandPool handle() { return m_vk_pool; }
+
+private:
+	CommandPool(Backend::Ptr backend, uint32_t queue_family_index);
+
+private:
+    VkCommandPool m_vk_pool = nullptr;
+};
+
+class CommandBuffer : public Object
+{
+public:
+    using Ptr = std::shared_ptr<CommandBuffer>;
+
+    
+	static CommandBuffer::Ptr create(Backend::Ptr backend, CommandPool::Ptr pool);
+
+    ~CommandBuffer();
+
+	void                   reset();
+	inline VkCommandBuffer handle() { return m_vk_command_buffer; }
+
+private:
+	CommandBuffer(Backend::Ptr backend, CommandPool::Ptr pool);
+
+private:
+    VkCommandBuffer m_vk_command_buffer;
+    std::weak_ptr<CommandPool> m_vk_pool;
 };
 
 } // namespace vk

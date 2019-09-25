@@ -101,22 +101,22 @@ Object::Object(Backend::Ptr backend, VkDevice device) :
 
 // -----------------------------------------------------------------------------------------------------------------------------------
 
-Image::Ptr Image::create(Backend::Ptr backend, uint32_t width, uint32_t height, uint32_t depth, uint32_t mip_levels, uint32_t array_size, VkFormat format, VmaMemoryUsage memory_usage, VkImageUsageFlagBits usage, VkSampleCountFlagBits sample_count)
+Image::Ptr Image::create(Backend::Ptr backend, VkImageType type, uint32_t width, uint32_t height, uint32_t depth, uint32_t mip_levels, uint32_t array_size, VkFormat format, VmaMemoryUsage memory_usage, VkImageUsageFlagBits usage, VkSampleCountFlagBits sample_count, VkImageLayout initial_layout)
 {
-    return std::shared_ptr<Image>(new Image(backend, width, height, depth, mip_levels, array_size, format, memory_usage, usage, sample_count));
+    return std::shared_ptr<Image>(new Image(backend, type, width, height, depth, mip_levels, array_size, format, memory_usage, usage, sample_count, initial_layout));
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------
 
-Image::Ptr Image::create(VkDevice device, VkImage image, uint32_t width, uint32_t height, VkFormat format, VkSampleCountFlags sample_count)
+Image::Ptr Image::create_from_swapchain(Backend::Ptr backend, VkImage image, VkImageType type, uint32_t width, uint32_t height, uint32_t depth, uint32_t mip_levels, uint32_t array_size, VkFormat format, VmaMemoryUsage memory_usage, VkImageUsageFlagBits usage, VkSampleCountFlagBits sample_count)
 {
-    return std::shared_ptr<Image>(new Image(device, image, width, height, format, sample_count));
+    return std::shared_ptr<Image>(new Image(backend, image, type, width, height, depth, mip_levels, array_size, format, memory_usage, usage, sample_count));
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------
 
-Image::Image(Backend::Ptr backend, uint32_t width, uint32_t height, uint32_t depth, uint32_t mip_levels, uint32_t array_size, VkFormat format, VmaMemoryUsage memory_usage, VkImageUsageFlagBits usage, VkSampleCountFlagBits sample_count) :
-    Object(backend)
+Image::Image(Backend::Ptr backend, VkImageType type, uint32_t width, uint32_t height, uint32_t depth, uint32_t mip_levels, uint32_t array_size, VkFormat format, VmaMemoryUsage memory_usage, VkImageUsageFlagBits usage, VkSampleCountFlagBits sample_count, VkImageLayout initial_layout) :
+    Object(backend), m_type(type), m_width(width), m_height(height), m_depth(depth), m_mip_levels(mip_levels), m_array_size(array_size), m_format(format), m_memory_usage(memory_usage), m_sample_count(sample_count)
 {
     m_vma_allocator = backend->allocator();
 
@@ -124,7 +124,7 @@ Image::Image(Backend::Ptr backend, uint32_t width, uint32_t height, uint32_t dep
     INFERNO_ZERO_MEMORY(image_info);
 
     image_info.sType         = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-    image_info.imageType     = VK_IMAGE_TYPE_2D;
+    image_info.imageType     = type;
     image_info.extent.width  = width;
     image_info.extent.height = height;
     image_info.extent.depth  = 1;
@@ -132,10 +132,8 @@ Image::Image(Backend::Ptr backend, uint32_t width, uint32_t height, uint32_t dep
     image_info.arrayLayers   = array_size;
     image_info.format        = format;
     image_info.tiling        = VK_IMAGE_TILING_OPTIMAL;
-    image_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    image_info.initialLayout = initial_layout;
     image_info.usage         = usage;
-    image_info.usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-    image_info.usage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
     image_info.samples     = sample_count;
     image_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
@@ -157,9 +155,10 @@ Image::Image(Backend::Ptr backend, uint32_t width, uint32_t height, uint32_t dep
 
 // -----------------------------------------------------------------------------------------------------------------------------------
 
-Image::Image(VkDevice device, VkImage image, uint32_t width, uint32_t height, VkFormat format, VkSampleCountFlags sample_count) :
-    Object(nullptr, device)
+Image::Image(Backend::Ptr backend, VkImage image, VkImageType type, uint32_t width, uint32_t height, uint32_t depth, uint32_t mip_levels, uint32_t array_size, VkFormat format, VmaMemoryUsage memory_usage, VkImageUsageFlagBits usage, VkSampleCountFlagBits sample_count) :
+    Object(backend), m_vk_image(image), m_type(type), m_width(width), m_height(height), m_depth(depth), m_mip_levels(mip_levels), m_array_size(array_size), m_format(format), m_memory_usage(memory_usage), m_sample_count(sample_count)
 {
+   
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------
@@ -172,28 +171,14 @@ Image::~Image()
 
 // -----------------------------------------------------------------------------------------------------------------------------------
 
-VkImage Image::handle()
-{
-    return m_vk_image;
-}
-
-// -----------------------------------------------------------------------------------------------------------------------------------
-
-ImageView::Ptr ImageView::create(Backend::Ptr backend, Image::Ptr image, VkImageViewType view_type, uint32_t base_mip_level, uint32_t level_count, uint32_t base_array_layer, uint32_t layer_count)
+ImageView::Ptr ImageView::create(Backend::Ptr backend, Image::Ptr image, VkImageViewType view_type, VkImageAspectFlags aspect_flags, uint32_t base_mip_level, uint32_t level_count, uint32_t base_array_layer, uint32_t layer_count)
 {
     return std::shared_ptr<ImageView>(new ImageView(backend, image, view_type, base_mip_level, level_count, base_array_layer, layer_count));
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------
 
-ImageView::Ptr ImageView::create(VkDevice device, Image::Ptr image, VkImageViewType view_type, uint32_t base_mip_level, uint32_t level_count, uint32_t base_array_layer, uint32_t layer_count)
-{
-    return std::shared_ptr<ImageView>(new ImageView(device, image, view_type, base_mip_level, level_count, base_array_layer, layer_count));
-}
-
-// -----------------------------------------------------------------------------------------------------------------------------------
-
-ImageView::ImageView(Backend::Ptr backend, Image::Ptr image, VkImageViewType view_type, uint32_t base_mip_level, uint32_t level_count, uint32_t base_array_layer, uint32_t layer_count) :
+ImageView::ImageView(Backend::Ptr backend, Image::Ptr image, VkImageViewType view_type, VkImageAspectFlags aspect_flags, uint32_t base_mip_level, uint32_t level_count, uint32_t base_array_layer, uint32_t layer_count) :
     Object(backend)
 {
     VkImageViewCreateInfo info;
@@ -202,39 +187,180 @@ ImageView::ImageView(Backend::Ptr backend, Image::Ptr image, VkImageViewType vie
     info.sType    = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
     info.image    = image->handle();
     info.viewType = view_type;
-    //info.format                          = image->format();
-    //info.subresourceRange.aspectMask     = image->aspect_flags();
-    info.subresourceRange.baseMipLevel   = 0;
-    info.subresourceRange.levelCount     = 1;
-    info.subresourceRange.baseArrayLayer = 0;
-    info.subresourceRange.layerCount     = 1;
+    info.format                          = image->format();
+    info.subresourceRange.aspectMask     = aspect_flags;
+    info.subresourceRange.baseMipLevel   = base_mip_level;
+    info.subresourceRange.levelCount     = level_count;
+    info.subresourceRange.baseArrayLayer = base_array_layer;
+    info.subresourceRange.layerCount     = layer_count;
 
     if (vkCreateImageView(m_vk_device, &info, nullptr, &m_vk_image_view) != VK_SUCCESS)
     {
-        throw std::runtime_error("failed to create texture image view!");
+        INFERNO_LOG_FATAL("(Vulkan) Failed to create Image View.");
+        throw std::runtime_error("(Vulkan) Failed to create Image View.");
     }
-}
-
-// -----------------------------------------------------------------------------------------------------------------------------------
-
-ImageView::ImageView(VkDevice device, Image::Ptr image, VkImageViewType view_type, uint32_t base_mip_level, uint32_t level_count, uint32_t base_array_layer, uint32_t layer_count) :
-    Object(nullptr, device)
-{
-    VkImageViewCreateInfo info;
-    INFERNO_ZERO_MEMORY(info);
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------
 
 ImageView::~ImageView()
 {
+    if (m_vk_backend.expired())
+    {
+        INFERNO_LOG_FATAL("(Vulkan) Destructing after Device.");
+        throw std::runtime_error("(Vulkan) Destructing after Device.");
+    }
+
+    auto backend = m_vk_backend.lock();
+
+    vkDestroyImageView(backend->device(), m_vk_image_view, nullptr);
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+RenderPass::Ptr RenderPass::create(Backend::Ptr backend, std::vector<VkAttachmentDescription> attachment_descs, std::vector<VkSubpassDescription> subpass_descs, std::vector<VkSubpassDependency> subpass_deps)
+{
+    return std::shared_ptr<RenderPass>(new RenderPass(backend, attachment_descs, subpass_descs, subpass_deps));
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+RenderPass::RenderPass(Backend::Ptr backend, std::vector<VkAttachmentDescription> attachment_descs, std::vector<VkSubpassDescription> subpass_descs, std::vector<VkSubpassDependency> subpass_deps) :
+    Object(backend)
+{
+    VkRenderPassCreateInfo render_pass_info;
+
+    render_pass_info.sType                  = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+    render_pass_info.attachmentCount        = attachment_descs.size();
+    render_pass_info.pAttachments           = attachment_descs.data();
+    render_pass_info.subpassCount           = subpass_descs.size();
+    render_pass_info.pSubpasses             = subpass_descs.data();
+    render_pass_info.dependencyCount        = subpass_deps.size();
+    render_pass_info.pDependencies          = subpass_deps.data();
+
+    if (vkCreateRenderPass(m_vk_device, &render_pass_info, nullptr, &m_vk_render_pass) != VK_SUCCESS)
+    {
+        INFERNO_LOG_FATAL("(Vulkan) Failed to create Render Pass.");
+        throw std::runtime_error("(Vulkan) Failed to create Render Pass.");
+    }
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+RenderPass::~RenderPass()
+{
+    if (m_vk_backend.expired())
+    {
+        INFERNO_LOG_FATAL("(Vulkan) Destructing after Device.");
+        throw std::runtime_error("(Vulkan) Destructing after Device.");
+    }
+
+    auto backend = m_vk_backend.lock();
+
+    vkDestroyRenderPass(backend->device(), m_vk_render_pass, nullptr);
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+CommandPool::Ptr CommandPool::create(Backend::Ptr backend, uint32_t queue_family_index)
+{
+    return std::shared_ptr<CommandPool>(new CommandPool(backend, queue_family_index));
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+CommandPool::CommandPool(Backend::Ptr backend, uint32_t queue_family_index) :
+    Object(backend)
+{
+    VkCommandPoolCreateInfo pool_info;
+    INFERNO_ZERO_MEMORY(pool_info);
+
+    pool_info.sType           = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+    pool_info.flags           = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+    pool_info.queueFamilyIndex = queue_family_index;
+
+    if (vkCreateCommandPool(backend->device(), &pool_info, nullptr, &m_vk_pool) != VK_SUCCESS)
+    {
+        throw std::runtime_error("failed to create command pool!");
+    }
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+CommandPool::~CommandPool()
+{
+	if (m_vk_backend.expired())
+	{
+		INFERNO_LOG_FATAL("(Vulkan) Destructing after Device.");
+		throw std::runtime_error("(Vulkan) Destructing after Device.");
+	}
+
+	auto backend = m_vk_backend.lock();
+	
+	vkDestroyCommandPool(backend->device(), m_vk_pool, nullptr);
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+CommandBuffer::CommandBuffer(Backend::Ptr backend, CommandPool::Ptr pool) :
+    Object(backend)
+{
+    m_vk_pool = pool;
+
+	VkCommandBufferAllocateInfo alloc_info;
+    INFERNO_ZERO_MEMORY(alloc_info);
+
+    alloc_info.sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    alloc_info.commandPool        = pool->handle();
+    alloc_info.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    alloc_info.commandBufferCount = 1;
+
+    if (vkAllocateCommandBuffers(backend->device(), &alloc_info, &m_vk_command_buffer) != VK_SUCCESS)
+    {
+        INFERNO_LOG_FATAL("(Vulkan) Failed to allocate Command Buffer.");
+        throw std::runtime_error("(Vulkan) Failed to allocate Command Buffer.");
+    }
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+CommandBuffer::Ptr CommandBuffer::create(Backend::Ptr backend, CommandPool::Ptr pool)
+{
+    return std::shared_ptr<CommandBuffer>(new CommandBuffer(backend, pool));
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+CommandBuffer::~CommandBuffer()
+{
+    if (m_vk_backend.expired() || m_vk_pool.expired())
+    {
+        INFERNO_LOG_FATAL("(Vulkan) Destructing after Device.");
+        throw std::runtime_error("(Vulkan) Destructing after Device.");
+    }
+
+    auto backend = m_vk_backend.lock();
+    auto pool    = m_vk_pool.lock();
+
+    vkFreeCommandBuffers(backend->device(), pool->handle(), 1, &m_vk_command_buffer);
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+void CommandBuffer::reset()
+{
+    vkResetCommandBuffer(m_vk_command_buffer, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------
 
 Backend::Ptr Backend::create(GLFWwindow* window, bool enable_validation_layers)
 {
-    return std::shared_ptr<Backend>(new Backend(window, enable_validation_layers));
+    Backend* backend = new Backend(window, enable_validation_layers);
+    std::shared_ptr<Backend> backend_shared = std::shared_ptr<Backend>(backend);
+    backend->create_swapchain(backend_shared);
+
+    return backend_shared;
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------
@@ -315,6 +441,16 @@ Backend::Backend(GLFWwindow* window, bool enable_validation_layers) :
 
 Backend::~Backend()
 {
+    for (int i = 0; i < m_swap_chain_images.size(); i++)
+    {		
+		m_swap_chain_framebuffers[i].reset();
+		m_swap_chain_image_views[i].reset();
+	}
+
+	m_swap_chain_render_pass.reset();
+	m_swap_chain_depth_view.reset();
+	m_swap_chain_depth.reset();
+
     if (m_vk_debug_messenger)
         destroy_debug_utils_messenger(m_vk_instance, m_vk_debug_messenger, nullptr);
 
@@ -805,7 +941,9 @@ bool Backend::create_logical_device()
     return true;
 }
 
-bool Backend::create_swapchain()
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+bool Backend::create_swapchain(std::shared_ptr<Backend> backend)
 {
     VkSurfaceFormatKHR surface_format = choose_swap_surface_format(m_swapchain_details.format);
     VkPresentModeKHR   present_mode   = choose_swap_present_mode(m_swapchain_details.present_modes);
@@ -866,17 +1004,102 @@ bool Backend::create_swapchain()
     if (vkGetSwapchainImagesKHR(m_vk_device, m_vk_swap_chain, &swap_image_count, &images[0]) != VK_SUCCESS)
         return false;
 
-    // @TODO: Create back buffer depth image/image view
+	m_swap_chain_depth_format = VK_FORMAT_D32_SFLOAT;
+
+    m_swap_chain_depth = Image::create(backend, 
+		VK_IMAGE_TYPE_2D, 
+		m_swap_chain_extent.width, 
+		m_swap_chain_extent.height, 
+		1, 
+		1, 
+		1,
+		VK_FORMAT_D32_SFLOAT, 
+		VMA_MEMORY_USAGE_GPU_ONLY, 
+		VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, 
+		VK_SAMPLE_COUNT_1_BIT, 
+		VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL);
+
+	m_swap_chain_depth_view = ImageView::create(backend, m_swap_chain_depth, VK_IMAGE_VIEW_TYPE_2D, VK_IMAGE_ASPECT_DEPTH_BIT);
+
+	
 
     for (int i = 0; i < swap_image_count; i++)
     {
-        m_swap_chain_images[i]      = Image::create(m_vk_device, images[i], m_swap_chain_extent.width, m_swap_chain_extent.height, m_swap_chain_image_format, VK_SAMPLE_COUNT_1_BIT);
-        m_swap_chain_image_views[i] = ImageView::create(m_vk_device, m_swap_chain_images[i], VK_IMAGE_VIEW_TYPE_2D);
+        m_swap_chain_images[i]      = Image::create_from_swapchain(backend, images[i], VK_IMAGE_TYPE_2D, m_swap_chain_extent.width, m_swap_chain_extent.height, 1, 1, 1, m_swap_chain_image_format, VMA_MEMORY_USAGE_UNKNOWN, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_SAMPLE_COUNT_1_BIT);
+        m_swap_chain_image_views[i] = ImageView::create(backend, m_swap_chain_images[i], VK_IMAGE_VIEW_TYPE_2D, VK_IMAGE_ASPECT_COLOR_BIT);
 
         // @TODO: Create swap chain Framebuffers
     }
 
     return true;
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+void Backend::create_render_pass(std::shared_ptr<Backend> backend)
+{
+    std::vector<VkAttachmentDescription> attachments(2);
+
+    // Color attachment
+    attachments[0].format         = m_swap_chain_image_format;
+    attachments[0].samples        = VK_SAMPLE_COUNT_1_BIT;
+    attachments[0].loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    attachments[0].storeOp        = VK_ATTACHMENT_STORE_OP_STORE;
+    attachments[0].stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    attachments[0].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    attachments[0].initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED;
+    attachments[0].finalLayout    = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+    // Depth attachment
+    attachments[1].format         = m_swap_chain_depth_format;
+    attachments[1].samples        = VK_SAMPLE_COUNT_1_BIT;
+    attachments[1].loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    attachments[1].storeOp        = VK_ATTACHMENT_STORE_OP_STORE;
+    attachments[1].stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    attachments[1].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    attachments[1].initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED;
+    attachments[1].finalLayout    = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+    VkAttachmentReference color_reference;
+    color_reference.attachment = 0;
+    color_reference.layout     = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+    VkAttachmentReference depth_reference;
+    depth_reference.attachment = 1;
+    depth_reference.layout     = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+    std::vector<VkSubpassDescription> subpass_description(1);
+
+    subpass_description[0].pipelineBindPoint       = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    subpass_description[0].colorAttachmentCount    = 1;
+    subpass_description[0].pColorAttachments       = &color_reference;
+    subpass_description[0].pDepthStencilAttachment = &depth_reference;
+    subpass_description[0].inputAttachmentCount    = 0;
+    subpass_description[0].pInputAttachments       = nullptr;
+    subpass_description[0].preserveAttachmentCount = 0;
+    subpass_description[0].pPreserveAttachments    = nullptr;
+    subpass_description[0].pResolveAttachments     = nullptr;
+
+    // Subpass dependencies for layout transitions
+    std::vector<VkSubpassDependency> dependencies(2);
+
+    dependencies[0].srcSubpass      = VK_SUBPASS_EXTERNAL;
+    dependencies[0].dstSubpass      = 0;
+    dependencies[0].srcStageMask    = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+    dependencies[0].dstStageMask    = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    dependencies[0].srcAccessMask   = VK_ACCESS_MEMORY_READ_BIT;
+    dependencies[0].dstAccessMask   = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+    dependencies[0].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+
+    dependencies[1].srcSubpass      = 0;
+    dependencies[1].dstSubpass      = VK_SUBPASS_EXTERNAL;
+    dependencies[1].srcStageMask    = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    dependencies[1].dstStageMask    = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+    dependencies[1].srcAccessMask   = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+    dependencies[1].dstAccessMask   = VK_ACCESS_MEMORY_READ_BIT;
+    dependencies[1].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+
+    m_swap_chain_render_pass = RenderPass::create(backend, attachments, subpass_description, dependencies);
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------
