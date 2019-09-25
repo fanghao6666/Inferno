@@ -113,7 +113,6 @@ public:
 
 protected:
     std::weak_ptr<Backend> m_vk_backend;
-    VkDevice               m_vk_device = nullptr;
 };
 
 class Image : public Object

@@ -95,7 +95,7 @@ bool QueueInfos::transfer()
 // -----------------------------------------------------------------------------------------------------------------------------------
 
 Object::Object(Backend::Ptr backend, VkDevice device) :
-    m_vk_backend(backend), m_vk_device(device)
+    m_vk_backend(backend)
 {
 }
 
@@ -172,7 +172,7 @@ Image::~Image()
 
 ImageView::Ptr ImageView::create(Backend::Ptr backend, Image::Ptr image, VkImageViewType view_type, VkImageAspectFlags aspect_flags, uint32_t base_mip_level, uint32_t level_count, uint32_t base_array_layer, uint32_t layer_count)
 {
-    return std::shared_ptr<ImageView>(new ImageView(backend, image, view_type, base_mip_level, level_count, base_array_layer, layer_count));
+    return std::shared_ptr<ImageView>(new ImageView(backend, image, view_type, aspect_flags, base_mip_level, level_count, base_array_layer, layer_count));
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------
@@ -193,7 +193,7 @@ ImageView::ImageView(Backend::Ptr backend, Image::Ptr image, VkImageViewType vie
     info.subresourceRange.baseArrayLayer = base_array_layer;
     info.subresourceRange.layerCount     = layer_count;
 
-    if (vkCreateImageView(m_vk_device, &info, nullptr, &m_vk_image_view) != VK_SUCCESS)
+    if (vkCreateImageView(backend->device(), &info, nullptr, &m_vk_image_view) != VK_SUCCESS)
     {
         INFERNO_LOG_FATAL("(Vulkan) Failed to create Image View.");
         throw std::runtime_error("(Vulkan) Failed to create Image View.");
@@ -487,6 +487,16 @@ Backend::Backend(GLFWwindow* window, bool enable_validation_layers) :
         INFERNO_LOG_FATAL("(Vulkan) Failed to create logical device.");
         throw std::runtime_error("(Vulkan) Failed to create logical device.");
     }
+
+	VmaAllocatorCreateInfo allocator_info = {};
+    allocator_info.physicalDevice         = m_vk_physical_device;
+    allocator_info.device                 = m_vk_device;
+
+    if (vmaCreateAllocator(&allocator_info, &m_vma_allocator) != VK_SUCCESS)
+	{
+	    INFERNO_LOG_FATAL("(Vulkan) Failed to create Allocator.");
+	    throw std::runtime_error("(Vulkan) Failed to create Allocator.");
+	}
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------
@@ -1069,19 +1079,24 @@ bool Backend::create_swapchain(std::shared_ptr<Backend> backend)
                                        VK_FORMAT_D32_SFLOAT,
                                        VMA_MEMORY_USAGE_GPU_ONLY,
                                        VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
-                                       VK_SAMPLE_COUNT_1_BIT,
-                                       VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL);
+                                       VK_SAMPLE_COUNT_1_BIT);
 
     m_swap_chain_depth_view = ImageView::create(backend, m_swap_chain_depth, VK_IMAGE_VIEW_TYPE_2D, VK_IMAGE_ASPECT_DEPTH_BIT);
 
 	create_render_pass(backend);
+
+	std::vector<ImageView::Ptr> views(2);
+
+	views[1] = m_swap_chain_depth_view;
 
     for (int i = 0; i < swap_image_count; i++)
     {
         m_swap_chain_images[i]      = Image::create_from_swapchain(backend, images[i], VK_IMAGE_TYPE_2D, m_swap_chain_extent.width, m_swap_chain_extent.height, 1, 1, 1, m_swap_chain_image_format, VMA_MEMORY_USAGE_UNKNOWN, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_SAMPLE_COUNT_1_BIT);
         m_swap_chain_image_views[i] = ImageView::create(backend, m_swap_chain_images[i], VK_IMAGE_VIEW_TYPE_2D, VK_IMAGE_ASPECT_COLOR_BIT);
 
-        // @TODO: Create swap chain Framebuffers
+		views[0] = m_swap_chain_image_views[i];
+ 
+		m_swap_chain_framebuffers[i] = Framebuffer::create(backend, m_swap_chain_render_pass, views, m_swap_chain_extent.width, m_swap_chain_extent.height, 1);
     }
 
     return true;
