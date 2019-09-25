@@ -134,8 +134,8 @@ Image::Image(Backend::Ptr backend, VkImageType type, uint32_t width, uint32_t he
     image_info.tiling        = VK_IMAGE_TILING_OPTIMAL;
     image_info.initialLayout = initial_layout;
     image_info.usage         = usage;
-    image_info.samples     = sample_count;
-    image_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    image_info.samples       = sample_count;
+    image_info.sharingMode   = VK_SHARING_MODE_EXCLUSIVE;
 
     VmaAllocationInfo       alloc_info;
     VmaAllocationCreateInfo alloc_create_info;
@@ -158,7 +158,6 @@ Image::Image(Backend::Ptr backend, VkImageType type, uint32_t width, uint32_t he
 Image::Image(Backend::Ptr backend, VkImage image, VkImageType type, uint32_t width, uint32_t height, uint32_t depth, uint32_t mip_levels, uint32_t array_size, VkFormat format, VmaMemoryUsage memory_usage, VkImageUsageFlagBits usage, VkSampleCountFlagBits sample_count) :
     Object(backend), m_vk_image(image), m_type(type), m_width(width), m_height(height), m_depth(depth), m_mip_levels(mip_levels), m_array_size(array_size), m_format(format), m_memory_usage(memory_usage), m_sample_count(sample_count)
 {
-   
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------
@@ -184,9 +183,9 @@ ImageView::ImageView(Backend::Ptr backend, Image::Ptr image, VkImageViewType vie
     VkImageViewCreateInfo info;
     INFERNO_ZERO_MEMORY(info);
 
-    info.sType    = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-    info.image    = image->handle();
-    info.viewType = view_type;
+    info.sType                           = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+    info.image                           = image->handle();
+    info.viewType                        = view_type;
     info.format                          = image->format();
     info.subresourceRange.aspectMask     = aspect_flags;
     info.subresourceRange.baseMipLevel   = base_mip_level;
@@ -229,16 +228,17 @@ RenderPass::RenderPass(Backend::Ptr backend, std::vector<VkAttachmentDescription
     Object(backend)
 {
     VkRenderPassCreateInfo render_pass_info;
+    INFERNO_ZERO_MEMORY(render_pass_info);
 
-    render_pass_info.sType                  = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-    render_pass_info.attachmentCount        = attachment_descs.size();
-    render_pass_info.pAttachments           = attachment_descs.data();
-    render_pass_info.subpassCount           = subpass_descs.size();
-    render_pass_info.pSubpasses             = subpass_descs.data();
-    render_pass_info.dependencyCount        = subpass_deps.size();
-    render_pass_info.pDependencies          = subpass_deps.data();
+    render_pass_info.sType           = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+    render_pass_info.attachmentCount = attachment_descs.size();
+    render_pass_info.pAttachments    = attachment_descs.data();
+    render_pass_info.subpassCount    = subpass_descs.size();
+    render_pass_info.pSubpasses      = subpass_descs.data();
+    render_pass_info.dependencyCount = subpass_deps.size();
+    render_pass_info.pDependencies   = subpass_deps.data();
 
-    if (vkCreateRenderPass(m_vk_device, &render_pass_info, nullptr, &m_vk_render_pass) != VK_SUCCESS)
+    if (vkCreateRenderPass(backend->device(), &render_pass_info, nullptr, &m_vk_render_pass) != VK_SUCCESS)
     {
         INFERNO_LOG_FATAL("(Vulkan) Failed to create Render Pass.");
         throw std::runtime_error("(Vulkan) Failed to create Render Pass.");
@@ -262,6 +262,57 @@ RenderPass::~RenderPass()
 
 // -----------------------------------------------------------------------------------------------------------------------------------
 
+Framebuffer::Ptr Framebuffer::create(Backend::Ptr backend, RenderPass::Ptr render_pass, std::vector<ImageView::Ptr> views, uint32_t width, uint32_t height, uint32_t layers)
+{
+    return std::shared_ptr<Framebuffer>(new Framebuffer(backend, render_pass, views, width, height, layers));
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+Framebuffer::Framebuffer(Backend::Ptr backend, RenderPass::Ptr render_pass, std::vector<ImageView::Ptr> views, uint32_t width, uint32_t height, uint32_t layers) :
+    Object(backend)
+{
+	std::vector<VkImageView> attachments(views.size());
+
+	for (int i = 0; i < attachments.size(); i++)
+		attachments[i] = views[i]->handle();
+
+	VkFramebufferCreateInfo frameBuffer_create_info;
+    INFERNO_ZERO_MEMORY(frameBuffer_create_info);
+
+    frameBuffer_create_info.sType                   = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+    frameBuffer_create_info.pNext                   = NULL;
+    frameBuffer_create_info.renderPass              = render_pass->handle();
+    frameBuffer_create_info.attachmentCount         = views.size();
+    frameBuffer_create_info.pAttachments            = attachments.data();
+    frameBuffer_create_info.width                   = width;
+    frameBuffer_create_info.height                  = height;
+    frameBuffer_create_info.layers                  = layers;
+
+	if (vkCreateFramebuffer(backend->device(), &frameBuffer_create_info, nullptr, &m_vk_framebuffer) != VK_SUCCESS)
+    {
+            INFERNO_LOG_FATAL("(Vulkan) Failed to create Framebuffer.");
+            throw std::runtime_error("(Vulkan) Destructing after Framebuffer.");
+    }
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+Framebuffer::~Framebuffer()
+{
+    if (m_vk_backend.expired())
+    {
+        INFERNO_LOG_FATAL("(Vulkan) Destructing after Device.");
+        throw std::runtime_error("(Vulkan) Destructing after Device.");
+    }
+
+    auto backend = m_vk_backend.lock();
+
+    vkDestroyFramebuffer(backend->device(), m_vk_framebuffer, nullptr);
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
 CommandPool::Ptr CommandPool::create(Backend::Ptr backend, uint32_t queue_family_index)
 {
     return std::shared_ptr<CommandPool>(new CommandPool(backend, queue_family_index));
@@ -275,13 +326,14 @@ CommandPool::CommandPool(Backend::Ptr backend, uint32_t queue_family_index) :
     VkCommandPoolCreateInfo pool_info;
     INFERNO_ZERO_MEMORY(pool_info);
 
-    pool_info.sType           = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-    pool_info.flags           = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+    pool_info.sType            = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+    pool_info.flags            = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
     pool_info.queueFamilyIndex = queue_family_index;
 
     if (vkCreateCommandPool(backend->device(), &pool_info, nullptr, &m_vk_pool) != VK_SUCCESS)
     {
-        throw std::runtime_error("failed to create command pool!");
+        INFERNO_LOG_FATAL("(Vulkan) Failed to create Command Pool.");
+        throw std::runtime_error("(Vulkan) Failed to create Command Pool.");
     }
 }
 
@@ -289,15 +341,15 @@ CommandPool::CommandPool(Backend::Ptr backend, uint32_t queue_family_index) :
 
 CommandPool::~CommandPool()
 {
-	if (m_vk_backend.expired())
-	{
-		INFERNO_LOG_FATAL("(Vulkan) Destructing after Device.");
-		throw std::runtime_error("(Vulkan) Destructing after Device.");
-	}
+    if (m_vk_backend.expired())
+    {
+        INFERNO_LOG_FATAL("(Vulkan) Destructing after Device.");
+        throw std::runtime_error("(Vulkan) Destructing after Device.");
+    }
 
-	auto backend = m_vk_backend.lock();
-	
-	vkDestroyCommandPool(backend->device(), m_vk_pool, nullptr);
+    auto backend = m_vk_backend.lock();
+
+    vkDestroyCommandPool(backend->device(), m_vk_pool, nullptr);
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------
@@ -307,7 +359,7 @@ CommandBuffer::CommandBuffer(Backend::Ptr backend, CommandPool::Ptr pool) :
 {
     m_vk_pool = pool;
 
-	VkCommandBufferAllocateInfo alloc_info;
+    VkCommandBufferAllocateInfo alloc_info;
     INFERNO_ZERO_MEMORY(alloc_info);
 
     alloc_info.sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -356,7 +408,7 @@ void CommandBuffer::reset()
 
 Backend::Ptr Backend::create(GLFWwindow* window, bool enable_validation_layers)
 {
-    Backend* backend = new Backend(window, enable_validation_layers);
+    Backend*                 backend        = new Backend(window, enable_validation_layers);
     std::shared_ptr<Backend> backend_shared = std::shared_ptr<Backend>(backend);
     backend->create_swapchain(backend_shared);
 
@@ -442,18 +494,19 @@ Backend::Backend(GLFWwindow* window, bool enable_validation_layers) :
 Backend::~Backend()
 {
     for (int i = 0; i < m_swap_chain_images.size(); i++)
-    {		
-		m_swap_chain_framebuffers[i].reset();
-		m_swap_chain_image_views[i].reset();
-	}
+    {
+        m_swap_chain_framebuffers[i].reset();
+        m_swap_chain_image_views[i].reset();
+    }
 
-	m_swap_chain_render_pass.reset();
-	m_swap_chain_depth_view.reset();
-	m_swap_chain_depth.reset();
+    m_swap_chain_render_pass.reset();
+    m_swap_chain_depth_view.reset();
+    m_swap_chain_depth.reset();
 
     if (m_vk_debug_messenger)
         destroy_debug_utils_messenger(m_vk_instance, m_vk_debug_messenger, nullptr);
 
+	vkDestroySwapchainKHR(m_vk_device, m_vk_swap_chain, nullptr);
     vkDestroySurfaceKHR(m_vk_instance, m_vk_surface, nullptr);
     vkDestroyInstance(m_vk_instance, nullptr);
 }
@@ -1004,24 +1057,24 @@ bool Backend::create_swapchain(std::shared_ptr<Backend> backend)
     if (vkGetSwapchainImagesKHR(m_vk_device, m_vk_swap_chain, &swap_image_count, &images[0]) != VK_SUCCESS)
         return false;
 
-	m_swap_chain_depth_format = VK_FORMAT_D32_SFLOAT;
+    m_swap_chain_depth_format = VK_FORMAT_D32_SFLOAT;
 
-    m_swap_chain_depth = Image::create(backend, 
-		VK_IMAGE_TYPE_2D, 
-		m_swap_chain_extent.width, 
-		m_swap_chain_extent.height, 
-		1, 
-		1, 
-		1,
-		VK_FORMAT_D32_SFLOAT, 
-		VMA_MEMORY_USAGE_GPU_ONLY, 
-		VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, 
-		VK_SAMPLE_COUNT_1_BIT, 
-		VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL);
+    m_swap_chain_depth = Image::create(backend,
+                                       VK_IMAGE_TYPE_2D,
+                                       m_swap_chain_extent.width,
+                                       m_swap_chain_extent.height,
+                                       1,
+                                       1,
+                                       1,
+                                       VK_FORMAT_D32_SFLOAT,
+                                       VMA_MEMORY_USAGE_GPU_ONLY,
+                                       VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+                                       VK_SAMPLE_COUNT_1_BIT,
+                                       VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL);
 
-	m_swap_chain_depth_view = ImageView::create(backend, m_swap_chain_depth, VK_IMAGE_VIEW_TYPE_2D, VK_IMAGE_ASPECT_DEPTH_BIT);
+    m_swap_chain_depth_view = ImageView::create(backend, m_swap_chain_depth, VK_IMAGE_VIEW_TYPE_2D, VK_IMAGE_ASPECT_DEPTH_BIT);
 
-	
+	create_render_pass(backend);
 
     for (int i = 0; i < swap_image_count; i++)
     {

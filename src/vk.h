@@ -125,6 +125,7 @@ public:
     static Image::Ptr create_from_swapchain(Backend::Ptr backend, VkImage image, VkImageType type, uint32_t width, uint32_t height, uint32_t depth, uint32_t mip_levels, uint32_t array_size, VkFormat format, VmaMemoryUsage memory_usage, VkImageUsageFlagBits usage, VkSampleCountFlagBits sample_count);
 
     ~Image();
+
     inline VkImageType        type() { return m_type; }
     inline VkImage            handle() { return m_vk_image; }
     inline uint32_t           width() { return m_width; }
@@ -167,6 +168,8 @@ public:
 
     ~ImageView();
 
+	inline VkImageView handle() { return m_vk_image_view; }
+
 private:
     ImageView(Backend::Ptr backend, Image::Ptr image, VkImageViewType view_type, VkImageAspectFlags aspect_flags, uint32_t base_mip_level = 0, uint32_t level_count = 1, uint32_t base_array_layer = 0, uint32_t layer_count = 1);
 
@@ -179,23 +182,37 @@ class RenderPass : public Object
 public:
     using Ptr = std::shared_ptr<RenderPass>;
 
-	static RenderPass::Ptr create(Backend::Ptr backend, std::vector<VkAttachmentDescription> attachment_descs, std::vector<VkSubpassDescription> subpass_descs, std::vector<VkSubpassDependency> subpass_deps);
-    ~RenderPass(); 
+    static RenderPass::Ptr create(Backend::Ptr backend, std::vector<VkAttachmentDescription> attachment_descs, std::vector<VkSubpassDescription> subpass_descs, std::vector<VkSubpassDependency> subpass_deps);
+    ~RenderPass();
+    
+	inline VkRenderPass handle() { return m_vk_render_pass; }
 
 private:
-	RenderPass(Backend::Ptr backend, std::vector<VkAttachmentDescription> attachment_descs, std::vector<VkSubpassDescription> subpass_descs, std::vector<VkSubpassDependency> subpass_deps);
+    RenderPass(Backend::Ptr backend, std::vector<VkAttachmentDescription> attachment_descs, std::vector<VkSubpassDescription> subpass_descs, std::vector<VkSubpassDependency> subpass_deps);
 
 private:
-	VkRenderPass m_vk_render_pass = nullptr;
+    VkRenderPass m_vk_render_pass = nullptr;
 };
 
-class Framebuffer
+class Framebuffer : public Object
 {
 public:
     using Ptr = std::shared_ptr<Framebuffer>;
+
+	static Framebuffer::Ptr create(Backend::Ptr backend, RenderPass::Ptr render_pass, std::vector<ImageView::Ptr> views, uint32_t width, uint32_t height, uint32_t layers);
+
+    ~Framebuffer();
+
+	inline VkFramebuffer handle() { return m_vk_framebuffer; }
+
+private:
+	Framebuffer(Backend::Ptr backend, RenderPass::Ptr render_pass, std::vector<ImageView::Ptr> views, uint32_t width, uint32_t height, uint32_t layers);
+
+private:
+    VkFramebuffer m_vk_framebuffer;
 };
 
-class Buffer
+class Buffer : public Object
 {
 public:
     using Ptr = std::shared_ptr<Buffer>;
@@ -206,15 +223,14 @@ class CommandPool : public Object
 public:
     using Ptr = std::shared_ptr<CommandPool>;
 
-    
-	static CommandPool::Ptr create(Backend::Ptr backend, uint32_t queue_family_index);
+    static CommandPool::Ptr create(Backend::Ptr backend, uint32_t queue_family_index);
 
     ~CommandPool();
 
-	inline VkCommandPool handle() { return m_vk_pool; }
+    inline VkCommandPool handle() { return m_vk_pool; }
 
 private:
-	CommandPool(Backend::Ptr backend, uint32_t queue_family_index);
+    CommandPool(Backend::Ptr backend, uint32_t queue_family_index);
 
 private:
     VkCommandPool m_vk_pool = nullptr;
@@ -225,19 +241,18 @@ class CommandBuffer : public Object
 public:
     using Ptr = std::shared_ptr<CommandBuffer>;
 
-    
-	static CommandBuffer::Ptr create(Backend::Ptr backend, CommandPool::Ptr pool);
+    static CommandBuffer::Ptr create(Backend::Ptr backend, CommandPool::Ptr pool);
 
     ~CommandBuffer();
 
-	void                   reset();
-	inline VkCommandBuffer handle() { return m_vk_command_buffer; }
+    void                   reset();
+    inline VkCommandBuffer handle() { return m_vk_command_buffer; }
 
 private:
-	CommandBuffer(Backend::Ptr backend, CommandPool::Ptr pool);
+    CommandBuffer(Backend::Ptr backend, CommandPool::Ptr pool);
 
 private:
-    VkCommandBuffer m_vk_command_buffer;
+    VkCommandBuffer            m_vk_command_buffer;
     std::weak_ptr<CommandPool> m_vk_pool;
 };
 
