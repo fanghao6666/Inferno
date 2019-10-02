@@ -272,27 +272,27 @@ Framebuffer::Ptr Framebuffer::create(Backend::Ptr backend, RenderPass::Ptr rende
 Framebuffer::Framebuffer(Backend::Ptr backend, RenderPass::Ptr render_pass, std::vector<ImageView::Ptr> views, uint32_t width, uint32_t height, uint32_t layers) :
     Object(backend)
 {
-	std::vector<VkImageView> attachments(views.size());
+    std::vector<VkImageView> attachments(views.size());
 
-	for (int i = 0; i < attachments.size(); i++)
-		attachments[i] = views[i]->handle();
+    for (int i = 0; i < attachments.size(); i++)
+        attachments[i] = views[i]->handle();
 
-	VkFramebufferCreateInfo frameBuffer_create_info;
+    VkFramebufferCreateInfo frameBuffer_create_info;
     INFERNO_ZERO_MEMORY(frameBuffer_create_info);
 
-    frameBuffer_create_info.sType                   = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-    frameBuffer_create_info.pNext                   = NULL;
-    frameBuffer_create_info.renderPass              = render_pass->handle();
-    frameBuffer_create_info.attachmentCount         = views.size();
-    frameBuffer_create_info.pAttachments            = attachments.data();
-    frameBuffer_create_info.width                   = width;
-    frameBuffer_create_info.height                  = height;
-    frameBuffer_create_info.layers                  = layers;
+    frameBuffer_create_info.sType           = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+    frameBuffer_create_info.pNext           = NULL;
+    frameBuffer_create_info.renderPass      = render_pass->handle();
+    frameBuffer_create_info.attachmentCount = views.size();
+    frameBuffer_create_info.pAttachments    = attachments.data();
+    frameBuffer_create_info.width           = width;
+    frameBuffer_create_info.height          = height;
+    frameBuffer_create_info.layers          = layers;
 
-	if (vkCreateFramebuffer(backend->device(), &frameBuffer_create_info, nullptr, &m_vk_framebuffer) != VK_SUCCESS)
+    if (vkCreateFramebuffer(backend->device(), &frameBuffer_create_info, nullptr, &m_vk_framebuffer) != VK_SUCCESS)
     {
-            INFERNO_LOG_FATAL("(Vulkan) Failed to create Framebuffer.");
-            throw std::runtime_error("(Vulkan) Failed to create Framebuffer.");
+        INFERNO_LOG_FATAL("(Vulkan) Failed to create Framebuffer.");
+        throw std::runtime_error("(Vulkan) Failed to create Framebuffer.");
     }
 }
 
@@ -337,7 +337,7 @@ Buffer::Buffer(Backend::Ptr backend, VkBufferUsageFlags usage, size_t size, VmaM
 
     VkMemoryPropertyFlags memory_prop_flags = 0;
     VkBufferUsageFlags    usage_flags       = usage;
-    
+
     if (memory_usage == VMA_MEMORY_USAGE_CPU_ONLY)
     {
         memory_prop_flags |= VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
@@ -362,12 +362,12 @@ Buffer::Buffer(Backend::Ptr backend, VkBufferUsageFlags usage, size_t size, VmaM
     VmaAllocationCreateInfo alloc_create_info;
     INFERNO_ZERO_MEMORY(alloc_create_info);
 
-    alloc_create_info.usage                   = memory_usage;
-    alloc_create_info.flags                   = create_flags;
-    alloc_create_info.requiredFlags           = memory_prop_flags;
-    alloc_create_info.preferredFlags          = 0;
-    alloc_create_info.memoryTypeBits          = 0;
-    alloc_create_info.pool                    = VK_NULL_HANDLE;
+    alloc_create_info.usage          = memory_usage;
+    alloc_create_info.flags          = create_flags;
+    alloc_create_info.requiredFlags  = memory_prop_flags;
+    alloc_create_info.preferredFlags = 0;
+    alloc_create_info.memoryTypeBits = 0;
+    alloc_create_info.pool           = VK_NULL_HANDLE;
 
     if (vmaCreateBuffer(m_vma_allocator, &buffer_info, &alloc_create_info, &m_vk_buffer, &m_vma_allocation, &vma_alloc_info) != VK_SUCCESS)
     {
@@ -375,7 +375,7 @@ Buffer::Buffer(Backend::Ptr backend, VkBufferUsageFlags usage, size_t size, VmaM
         throw std::runtime_error("(Vulkan) Failed to create Buffer.");
     }
 
-	m_vk_device_memory = vma_alloc_info.deviceMemory;
+    m_vk_device_memory = vma_alloc_info.deviceMemory;
 
     if (create_flags & VMA_ALLOCATION_CREATE_MAPPED_BIT)
         m_mapped_ptr = vma_alloc_info.pMappedData;
@@ -483,6 +483,364 @@ void CommandBuffer::reset()
 
 // -----------------------------------------------------------------------------------------------------------------------------------
 
+GraphicsPipeline::Ptr GraphicsPipeline::create(Backend::Ptr backend, Desc desc)
+{
+    return std::shared_ptr<GraphicsPipeline>(new GraphicsPipeline(backend, desc));
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+GraphicsPipeline::GraphicsPipeline(Backend::Ptr backend, Desc desc) :
+    Object(backend)
+{
+    VkGraphicsPipelineCreateInfo pipeline_info;
+    INFERNO_ZERO_MEMORY(pipeline_info);
+
+
+    if (vkCreateGraphicsPipelines(backend->device(), nullptr, 1, & pipeline_info, nullptr, &m_vk_pipeline) != VK_SUCCESS)
+    {
+        INFERNO_LOG_FATAL("(Vulkan) Failed to create Graphics Pipeline.");
+        throw std::runtime_error("(Vulkan) Failed to create Graphics Pipeline.");
+    }
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+GraphicsPipeline::~GraphicsPipeline()
+{
+    if (m_vk_backend.expired())
+    {
+        INFERNO_LOG_FATAL("(Vulkan) Destructing after Device.");
+        throw std::runtime_error("(Vulkan) Destructing after Device.");
+    }
+
+    auto backend = m_vk_backend.lock();
+
+    vkDestroyPipeline(backend->device(), m_vk_pipeline, nullptr);
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+ComputePipeline::Ptr ComputePipeline::create(Backend::Ptr backend, Desc desc)
+{
+    return std::shared_ptr<ComputePipeline>(new ComputePipeline(backend, desc));
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+ComputePipeline::ComputePipeline(Backend::Ptr backend, Desc desc) :
+    Object(backend)
+{
+    VkGraphicsPipelineCreateInfo pipeline_info;
+    INFERNO_ZERO_MEMORY(pipeline_info);
+
+    if (vkCreateGraphicsPipelines(backend->device(), nullptr, 1, &pipeline_info, nullptr, &m_vk_pipeline) != VK_SUCCESS)
+    {
+        INFERNO_LOG_FATAL("(Vulkan) Failed to create Compute Pipeline.");
+        throw std::runtime_error("(Vulkan) Failed to create Compute Pipeline.");
+    }
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+ComputePipeline::~ComputePipeline()
+{
+    if (m_vk_backend.expired())
+    {
+        INFERNO_LOG_FATAL("(Vulkan) Destructing after Device.");
+        throw std::runtime_error("(Vulkan) Destructing after Device.");
+    }
+
+    auto backend = m_vk_backend.lock();
+
+    vkDestroyPipeline(backend->device(), m_vk_pipeline, nullptr);
+}
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+Sampler::Ptr Sampler::create(Backend::Ptr backend, Desc desc)
+{
+    return std::shared_ptr<Sampler>(new Sampler(backend, desc));
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+Sampler::Sampler(Backend::Ptr backend, Desc desc) :
+    Object(backend)
+{
+    VkSamplerCreateInfo info;
+    INFERNO_ZERO_MEMORY(info);
+
+	info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+    info.flags = desc.flags;
+    info.magFilter = desc.mag_filter;
+    info.minFilter = desc.min_filter;
+    info.mipmapMode = desc.mipmap_mode;
+    info.addressModeU = desc.address_mode_u;
+    info.addressModeV = desc.address_mode_v;
+    info.addressModeW = desc.address_mode_w;
+    info.mipLodBias = desc.mip_lod_bias;
+    info.anisotropyEnable = desc.anisotropy_enable;
+    info.maxAnisotropy = desc.max_anisotropy;
+    info.compareEnable = desc.compare_enable;
+    info.compareOp = desc.compare_op;
+    info.minLod = desc.min_lod;
+    info.maxLod = desc.max_lod;
+    info.borderColor = desc.border_color; 
+    info.unnormalizedCoordinates = desc.unnormalized_coordinates;
+
+	if (vkCreateSampler(backend->device(), &info, nullptr, &m_vk_sampler) != VK_SUCCESS)
+    {
+        INFERNO_LOG_FATAL("(Vulkan) Failed to create sampler.");
+        throw std::runtime_error("(Vulkan) Failed to create sampler.");
+    }
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+Sampler::~Sampler()
+{
+    if (m_vk_backend.expired())
+    {
+        INFERNO_LOG_FATAL("(Vulkan) Destructing after Device.");
+        throw std::runtime_error("(Vulkan) Destructing after Device.");
+    }
+
+    auto backend = m_vk_backend.lock();
+
+    vkDestroySampler(backend->device(), m_vk_sampler, nullptr);
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+DescriptorSetLayout::Desc& DescriptorSetLayout::Desc::add_binding(uint32_t binding, VkDescriptorType descriptor_type, uint32_t descriptor_count, VkShaderStageFlags stage_flags)
+{
+    bindings.push_back({ binding, descriptor_type, descriptor_count, stage_flags, nullptr });
+    return *this;
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+DescriptorSetLayout::Desc& DescriptorSetLayout::Desc::add_binding(uint32_t binding, VkDescriptorType descriptor_type, uint32_t descriptor_count, VkShaderStageFlags stage_flags, Sampler::Ptr samplers[])
+{
+    for (int i = 0; i < descriptor_count; i++)
+        binding_samplers[binding][i] = samplers[i]->handle();
+
+    bindings.push_back({ binding, descriptor_type, descriptor_count, stage_flags, &binding_samplers[binding][0] });
+    return *this;
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+DescriptorSetLayout::Ptr DescriptorSetLayout::create(Backend::Ptr backend, Desc desc)
+{
+    return std::shared_ptr<DescriptorSetLayout>(new DescriptorSetLayout(backend, desc));
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+DescriptorSetLayout::DescriptorSetLayout(Backend::Ptr backend, Desc desc) :
+    Object(backend)
+{
+    VkDescriptorSetLayoutCreateInfo layout_info;
+    INFERNO_ZERO_MEMORY(layout_info);
+
+    layout_info.sType        = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    layout_info.bindingCount = desc.bindings.size();
+    layout_info.pBindings    = desc.bindings.data();
+
+    if (vkCreateDescriptorSetLayout(backend->device(), &layout_info, nullptr, &m_vk_ds_layout) != VK_SUCCESS)
+    {
+        INFERNO_LOG_FATAL("(Vulkan) Failed to create Descriptor Set Layout.");
+        throw std::runtime_error("(Vulkan) Failed to create Descriptor Set Layout.");
+    }
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+DescriptorSetLayout::~DescriptorSetLayout()
+{
+    if (m_vk_backend.expired())
+    {
+        INFERNO_LOG_FATAL("(Vulkan) Destructing after Device.");
+        throw std::runtime_error("(Vulkan) Destructing after Device.");
+    }
+
+    auto backend = m_vk_backend.lock();
+
+    vkDestroyDescriptorSetLayout(backend->device(), m_vk_ds_layout, nullptr);
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+PipelineLayout::Desc& PipelineLayout::Desc::add_descriptor_set_layout(DescriptorSetLayout::Ptr layout)
+{
+    layouts.push_back(layout);
+    return *this;
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+PipelineLayout::Desc& PipelineLayout::Desc::add_push_constant_range(VkShaderStageFlags stage_flags, uint32_t offset, uint32_t size)
+{
+    push_constant_ranges.push_back({ stage_flags, offset, size });
+    return *this;
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+PipelineLayout::Ptr PipelineLayout::create(Backend::Ptr backend, Desc desc)
+{
+    return std::shared_ptr<PipelineLayout>(new PipelineLayout(backend, desc));
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+PipelineLayout::PipelineLayout(Backend::Ptr backend, Desc desc) :
+    Object(backend)
+{
+    std::vector<VkDescriptorSetLayout> vk_layouts(desc.layouts.size());
+
+    for (uint32_t i = 0; i < desc.layouts.size(); i++)
+        vk_layouts[i] = desc.layouts[i]->handle();
+
+    VkPipelineLayoutCreateInfo info;
+    INFERNO_ZERO_MEMORY(info);
+
+    info.sType                  = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+    info.pushConstantRangeCount = desc.push_constant_ranges.size();
+    info.pPushConstantRanges    = desc.push_constant_ranges.data();
+    info.setLayoutCount         = desc.layouts.size();
+    info.pSetLayouts            = vk_layouts.data();
+
+    if (vkCreatePipelineLayout(backend->device(), &info, nullptr, &m_vk_pipeline_layout) != VK_SUCCESS)
+    {
+        INFERNO_LOG_FATAL("(Vulkan) Failed to create pipeline layout.");
+        throw std::runtime_error("(Vulkan) Failed to create pipeline layout.");
+    }
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+PipelineLayout::~PipelineLayout()
+{
+    if (m_vk_backend.expired())
+    {
+        INFERNO_LOG_FATAL("(Vulkan) Destructing after Device.");
+        throw std::runtime_error("(Vulkan) Destructing after Device.");
+    }
+
+    auto backend = m_vk_backend.lock();
+
+    vkDestroyPipelineLayout(backend->device(), m_vk_pipeline_layout, nullptr);
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+DescriptorPool::Desc& DescriptorPool::Desc::set_max_sets(uint32_t num)
+{
+    max_sets = num;
+    return *this;
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+DescriptorPool::Desc& DescriptorPool::Desc::add_pool_size(VkDescriptorType type, uint32_t descriptor_count)
+{
+    pool_sizes.push_back({ type, descriptor_count });
+    return *this;
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+DescriptorPool::Ptr DescriptorPool::create(Backend::Ptr backend, Desc desc)
+{
+    return std::shared_ptr<DescriptorPool>(new DescriptorPool(backend, desc));
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+DescriptorPool::DescriptorPool(Backend::Ptr backend, Desc desc) :
+    Object(backend)
+{
+    VkDescriptorPoolCreateInfo pool_info;
+    INFERNO_ZERO_MEMORY(pool_info);
+
+    pool_info.sType         = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+    pool_info.poolSizeCount = static_cast<uint32_t>(desc.pool_sizes.size());
+    pool_info.pPoolSizes    = desc.pool_sizes.data();
+    pool_info.maxSets       = desc.max_sets;
+
+    if (vkCreateDescriptorPool(backend->device(), &pool_info, nullptr, &m_vk_ds_pool) != VK_SUCCESS)
+    {
+        INFERNO_LOG_FATAL("(Vulkan) Failed to create descriptor pool.");
+        throw std::runtime_error("(Vulkan) Failed to create descriptor pool.");
+    }
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+DescriptorPool::~DescriptorPool()
+{
+    if (m_vk_backend.expired())
+    {
+        INFERNO_LOG_FATAL("(Vulkan) Destructing after Device.");
+        throw std::runtime_error("(Vulkan) Destructing after Device.");
+    }
+
+    auto backend = m_vk_backend.lock();
+
+    vkDestroyDescriptorPool(backend->device(), m_vk_ds_pool, nullptr);
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+DescriptorSet::Ptr DescriptorSet::create(Backend::Ptr backend, DescriptorSetLayout::Ptr layout, DescriptorPool::Ptr pool)
+{
+    return std::shared_ptr<DescriptorSet>(new DescriptorSet(backend, layout, pool));
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+DescriptorSet::DescriptorSet(Backend::Ptr backend, DescriptorSetLayout::Ptr layout, DescriptorPool::Ptr pool) :
+    Object(backend)
+{
+    m_vk_pool = pool;
+
+	VkDescriptorSetAllocateInfo info;
+    INFERNO_ZERO_MEMORY(info);
+
+	VkDescriptorSetLayout vk_layout = layout->handle();
+
+	info.sType              = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+	info.descriptorPool = pool->handle();
+    info.descriptorSetCount = 1;
+	info.pSetLayouts        = &vk_layout;
+	
+	if (vkAllocateDescriptorSets(backend->device(), &info, &m_vk_ds) != VK_SUCCESS)
+	{
+	    INFERNO_LOG_FATAL("(Vulkan) Failed to allocate descriptor set.");
+	    throw std::runtime_error("(Vulkan) Failed to allocate descriptor set.");
+	}
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+DescriptorSet::~DescriptorSet()
+{
+    if (m_vk_backend.expired() || m_vk_pool.expired())
+    {
+        INFERNO_LOG_FATAL("(Vulkan) Destructing after Device.");
+        throw std::runtime_error("(Vulkan) Destructing after Device.");
+    }
+
+    auto backend = m_vk_backend.lock();
+    auto pool    = m_vk_pool.lock();
+
+    vkFreeDescriptorSets(backend->device(), pool->handle(), 1, &m_vk_ds);
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
 Backend::Ptr Backend::create(GLFWwindow* window, bool enable_validation_layers)
 {
     Backend*                 backend        = new Backend(window, enable_validation_layers);
@@ -565,15 +923,15 @@ Backend::Backend(GLFWwindow* window, bool enable_validation_layers) :
         throw std::runtime_error("(Vulkan) Failed to create logical device.");
     }
 
-	VmaAllocatorCreateInfo allocator_info = {};
+    VmaAllocatorCreateInfo allocator_info = {};
     allocator_info.physicalDevice         = m_vk_physical_device;
     allocator_info.device                 = m_vk_device;
 
     if (vmaCreateAllocator(&allocator_info, &m_vma_allocator) != VK_SUCCESS)
-	{
-	    INFERNO_LOG_FATAL("(Vulkan) Failed to create Allocator.");
-	    throw std::runtime_error("(Vulkan) Failed to create Allocator.");
-	}
+    {
+        INFERNO_LOG_FATAL("(Vulkan) Failed to create Allocator.");
+        throw std::runtime_error("(Vulkan) Failed to create Allocator.");
+    }
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------
@@ -593,7 +951,7 @@ Backend::~Backend()
     if (m_vk_debug_messenger)
         destroy_debug_utils_messenger(m_vk_instance, m_vk_debug_messenger, nullptr);
 
-	vkDestroySwapchainKHR(m_vk_device, m_vk_swap_chain, nullptr);
+    vkDestroySwapchainKHR(m_vk_device, m_vk_swap_chain, nullptr);
     vkDestroySurfaceKHR(m_vk_instance, m_vk_surface, nullptr);
     vkDestroyInstance(m_vk_instance, nullptr);
 }
@@ -1189,20 +1547,20 @@ bool Backend::create_swapchain(std::shared_ptr<Backend> backend)
 
     m_swap_chain_depth_view = ImageView::create(backend, m_swap_chain_depth, VK_IMAGE_VIEW_TYPE_2D, VK_IMAGE_ASPECT_DEPTH_BIT);
 
-	create_render_pass(backend);
+    create_render_pass(backend);
 
-	std::vector<ImageView::Ptr> views(2);
+    std::vector<ImageView::Ptr> views(2);
 
-	views[1] = m_swap_chain_depth_view;
+    views[1] = m_swap_chain_depth_view;
 
     for (int i = 0; i < swap_image_count; i++)
     {
         m_swap_chain_images[i]      = Image::create_from_swapchain(backend, images[i], VK_IMAGE_TYPE_2D, m_swap_chain_extent.width, m_swap_chain_extent.height, 1, 1, 1, m_swap_chain_image_format, VMA_MEMORY_USAGE_UNKNOWN, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_SAMPLE_COUNT_1_BIT);
         m_swap_chain_image_views[i] = ImageView::create(backend, m_swap_chain_images[i], VK_IMAGE_VIEW_TYPE_2D, VK_IMAGE_ASPECT_COLOR_BIT);
 
-		views[0] = m_swap_chain_image_views[i];
- 
-		m_swap_chain_framebuffers[i] = Framebuffer::create(backend, m_swap_chain_render_pass, views, m_swap_chain_extent.width, m_swap_chain_extent.height, 1);
+        views[0] = m_swap_chain_image_views[i];
+
+        m_swap_chain_framebuffers[i] = Framebuffer::create(backend, m_swap_chain_render_pass, views, m_swap_chain_extent.width, m_swap_chain_extent.height, 1);
     }
 
     return true;

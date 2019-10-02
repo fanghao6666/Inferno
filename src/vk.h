@@ -63,7 +63,7 @@ public:
 
 private:
     Backend(GLFWwindow* window, bool enable_validation_layers = false);
-    VkFormat find_depth_format();
+    VkFormat                 find_depth_format();
     bool                     check_validation_layer_support(std::vector<const char*> layers);
     bool                     check_device_extension_support(VkPhysicalDevice device);
     void                     query_swap_chain_support(VkPhysicalDevice device, SwapChainSupportDetails& details);
@@ -169,7 +169,7 @@ public:
 
     ~ImageView();
 
-	inline VkImageView handle() { return m_vk_image_view; }
+    inline VkImageView handle() { return m_vk_image_view; }
 
 private:
     ImageView(Backend::Ptr backend, Image::Ptr image, VkImageViewType view_type, VkImageAspectFlags aspect_flags, uint32_t base_mip_level = 0, uint32_t level_count = 1, uint32_t base_array_layer = 0, uint32_t layer_count = 1);
@@ -185,8 +185,8 @@ public:
 
     static RenderPass::Ptr create(Backend::Ptr backend, std::vector<VkAttachmentDescription> attachment_descs, std::vector<VkSubpassDescription> subpass_descs, std::vector<VkSubpassDependency> subpass_deps);
     ~RenderPass();
-    
-	inline VkRenderPass handle() { return m_vk_render_pass; }
+
+    inline VkRenderPass handle() { return m_vk_render_pass; }
 
 private:
     RenderPass(Backend::Ptr backend, std::vector<VkAttachmentDescription> attachment_descs, std::vector<VkSubpassDescription> subpass_descs, std::vector<VkSubpassDependency> subpass_deps);
@@ -200,14 +200,14 @@ class Framebuffer : public Object
 public:
     using Ptr = std::shared_ptr<Framebuffer>;
 
-	static Framebuffer::Ptr create(Backend::Ptr backend, RenderPass::Ptr render_pass, std::vector<ImageView::Ptr> views, uint32_t width, uint32_t height, uint32_t layers);
+    static Framebuffer::Ptr create(Backend::Ptr backend, RenderPass::Ptr render_pass, std::vector<ImageView::Ptr> views, uint32_t width, uint32_t height, uint32_t layers);
 
     ~Framebuffer();
 
-	inline VkFramebuffer handle() { return m_vk_framebuffer; }
+    inline VkFramebuffer handle() { return m_vk_framebuffer; }
 
 private:
-	Framebuffer(Backend::Ptr backend, RenderPass::Ptr render_pass, std::vector<ImageView::Ptr> views, uint32_t width, uint32_t height, uint32_t layers);
+    Framebuffer(Backend::Ptr backend, RenderPass::Ptr render_pass, std::vector<ImageView::Ptr> views, uint32_t width, uint32_t height, uint32_t layers);
 
 private:
     VkFramebuffer m_vk_framebuffer;
@@ -218,12 +218,12 @@ class Buffer : public Object
 public:
     using Ptr = std::shared_ptr<Buffer>;
 
-	static Buffer::Ptr create(Backend::Ptr backend, VkBufferUsageFlags usage, size_t size, VmaMemoryUsage memory_usage, VkFlags create_flags);
+    static Buffer::Ptr create(Backend::Ptr backend, VkBufferUsageFlags usage, size_t size, VmaMemoryUsage memory_usage, VkFlags create_flags);
 
     ~Buffer();
 
-	inline VkBuffer handle() { return m_vk_buffer; }
-    inline size_t   size() { return m_size; } 
+    inline VkBuffer handle() { return m_vk_buffer; }
+    inline size_t   size() { return m_size; }
 
 private:
     Buffer(Backend::Ptr backend, VkBufferUsageFlags usage, size_t size, VmaMemoryUsage memory_usage, VkFlags create_flags);
@@ -231,10 +231,10 @@ private:
 private:
     size_t           m_size;
     void*            m_mapped_ptr       = nullptr;
-	VkBuffer m_vk_buffer = nullptr;
-	VkDeviceMemory   m_vk_device_memory = nullptr;
-	VmaAllocator_T*  m_vma_allocator    = nullptr;
-	VmaAllocation_T* m_vma_allocation   = nullptr;
+    VkBuffer         m_vk_buffer        = nullptr;
+    VkDeviceMemory   m_vk_device_memory = nullptr;
+    VmaAllocator_T*  m_vma_allocator    = nullptr;
+    VmaAllocation_T* m_vma_allocation   = nullptr;
 };
 
 class CommandPool : public Object
@@ -273,6 +273,185 @@ private:
 private:
     VkCommandBuffer            m_vk_command_buffer;
     std::weak_ptr<CommandPool> m_vk_pool;
+};
+
+class GraphicsPipeline : public Object
+{
+public:
+    using Ptr = std::shared_ptr<GraphicsPipeline>;
+
+	struct Desc
+	{
+
+	};
+
+	static GraphicsPipeline::Ptr create(Backend::Ptr backend, Desc desc);
+
+	~GraphicsPipeline();
+
+private:
+        GraphicsPipeline(Backend::Ptr backend, Desc desc);
+
+private:
+    VkPipeline m_vk_pipeline;
+};
+
+class ComputePipeline : public Object
+{
+public:
+    using Ptr = std::shared_ptr<ComputePipeline>;
+
+    struct Desc
+    {
+    };
+
+    static ComputePipeline::Ptr create(Backend::Ptr backend, Desc desc);
+
+    ~ComputePipeline();
+
+private:
+    ComputePipeline(Backend::Ptr backend, Desc desc);
+
+private:
+    VkPipeline m_vk_pipeline;
+};
+
+class Sampler : public Object
+{
+public:
+    using Ptr = std::shared_ptr<Sampler>;
+
+	struct Desc
+	{
+        VkSamplerCreateFlags     flags;
+		VkFilter                 mag_filter;
+		VkFilter                 min_filter;
+		VkSamplerMipmapMode      mipmap_mode;
+		VkSamplerAddressMode     address_mode_u;
+		VkSamplerAddressMode     address_mode_v;
+		VkSamplerAddressMode     address_mode_w;
+		float                    mip_lod_bias;
+		VkBool32                 anisotropy_enable;
+		float                    max_anisotropy;
+		VkBool32                 compare_enable;
+		VkCompareOp              compare_op;
+		float                    min_lod;
+		float                    max_lod;
+		VkBorderColor            border_color;
+		VkBool32                 unnormalized_coordinates;
+	};
+
+    inline VkSampler handle() { return m_vk_sampler; }
+
+    static Sampler::Ptr create(Backend::Ptr backend,  Desc desc);
+	
+	~Sampler();
+
+private:
+    Sampler(Backend::Ptr backend, Desc desc);
+
+private:
+    VkSampler m_vk_sampler;
+};
+
+class DescriptorSetLayout : public Object
+{
+public:
+    using Ptr = std::shared_ptr<DescriptorSetLayout>;
+
+    struct Desc
+    {
+        std::vector<VkDescriptorSetLayoutBinding> bindings;
+        VkSampler                                 binding_samplers[32][8];
+
+        Desc& add_binding(uint32_t binding, VkDescriptorType descriptor_type, uint32_t descriptor_count, VkShaderStageFlags stage_flags);
+        Desc& add_binding(uint32_t binding, VkDescriptorType descriptor_type, uint32_t descriptor_count, VkShaderStageFlags stage_flags, Sampler::Ptr samplers[]);
+    };
+
+    static DescriptorSetLayout::Ptr create(Backend::Ptr backend, Desc desc);
+
+    ~DescriptorSetLayout();
+
+    inline VkDescriptorSetLayout handle() { return m_vk_ds_layout; }
+
+private:
+    DescriptorSetLayout(Backend::Ptr backend, Desc desc);
+
+private:
+    VkDescriptorSetLayout m_vk_ds_layout;
+};
+
+class PipelineLayout : public Object
+{
+public:
+    using Ptr = std::shared_ptr<PipelineLayout>;
+
+    struct Desc
+    {
+        std::vector<DescriptorSetLayout::Ptr> layouts;
+        std::vector<VkPushConstantRange>      push_constant_ranges;
+
+        Desc& add_descriptor_set_layout(DescriptorSetLayout::Ptr layout);
+        Desc& add_push_constant_range(VkShaderStageFlags stage_flags, uint32_t offset, uint32_t size);
+    };
+
+    static PipelineLayout::Ptr create(Backend::Ptr backend, Desc desc);
+
+    ~PipelineLayout();
+
+    inline VkPipelineLayout handle() { return m_vk_pipeline_layout; }
+
+private:
+    PipelineLayout(Backend::Ptr backend, Desc desc);
+
+private:
+    VkPipelineLayout m_vk_pipeline_layout;
+};
+
+class DescriptorPool : public Object
+{
+public:
+    using Ptr = std::shared_ptr<DescriptorPool>;
+
+    struct Desc
+    {
+        uint32_t                          max_sets;
+        std::vector<VkDescriptorPoolSize> pool_sizes;
+
+        Desc& set_max_sets(uint32_t num);
+        Desc& add_pool_size(VkDescriptorType type, uint32_t descriptor_count);
+    };
+
+    static DescriptorPool::Ptr create(Backend::Ptr backend, Desc desc);
+
+    ~DescriptorPool();
+
+    inline VkDescriptorPool handle() { return m_vk_ds_pool; }
+
+private:
+    DescriptorPool(Backend::Ptr backend, Desc desc);
+
+private:
+    VkDescriptorPool m_vk_ds_pool;
+};
+
+class DescriptorSet : public Object
+{
+public:
+    using Ptr = std::shared_ptr<DescriptorSet>;
+
+    static DescriptorSet::Ptr create(Backend::Ptr backend, DescriptorSetLayout::Ptr layout, DescriptorPool::Ptr pool);
+
+    ~DescriptorSet();
+
+    inline VkDescriptorSet handle() { return m_vk_ds; }
+
+private:
+    DescriptorSet(Backend::Ptr backend, DescriptorSetLayout::Ptr layout, DescriptorPool::Ptr pool);
+
+private:
+    VkDescriptorSet               m_vk_ds;
+    std::weak_ptr<DescriptorPool> m_vk_pool;
 };
 
 } // namespace vk
