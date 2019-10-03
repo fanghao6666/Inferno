@@ -19,6 +19,7 @@ class ImageView;
 class Framebuffer;
 class RenderPass;
 class CommandBuffer;
+class PipelineLayout;
 
 struct SwapChainSupportDetails
 {
@@ -225,7 +226,7 @@ public:
     inline VkBuffer handle() { return m_vk_buffer; }
     inline size_t   size() { return m_size; }
     inline void*    mapped_ptr() { return m_mapped_ptr; }
-		 
+
 private:
     Buffer(Backend::Ptr backend, VkBufferUsageFlags usage, size_t size, VmaMemoryUsage memory_usage, VkFlags create_flags);
 
@@ -281,14 +282,14 @@ class ShaderModule : public Object
 public:
     using Ptr = std::shared_ptr<ShaderModule>;
 
-	static ShaderModule::Ptr create(Backend::Ptr backend, std::vector<uint32_t> spirv);
-	
+    static ShaderModule::Ptr create(Backend::Ptr backend, std::vector<uint32_t> spirv);
+
     ~ShaderModule();
 
-	inline VkShaderModule handle() { return m_vk_module; }
+    inline VkShaderModule handle() { return m_vk_module; }
 
 private:
-	ShaderModule(Backend::Ptr backend, std::vector<uint32_t> spirv);
+    ShaderModule(Backend::Ptr backend, std::vector<uint32_t> spirv);
 
 private:
     VkShaderModule m_vk_module;
@@ -297,10 +298,10 @@ private:
 struct VertexInputStateDesc
 {
     VkPipelineVertexInputStateCreateInfo create_info;
-    VkVertexInputBindingDescription binding_desc[16];
-    VkVertexInputAttributeDescription attribute_desc[16];
+    VkVertexInputBindingDescription      binding_desc[16];
+    VkVertexInputAttributeDescription    attribute_desc[16];
 
-	VertexInputStateDesc();
+    VertexInputStateDesc();
     VertexInputStateDesc& add_binding_desc(uint32_t binding, uint32_t stride, VkVertexInputRate input_rate);
     VertexInputStateDesc& add_attribute_desc(uint32_t location, uint32_t binding, VkFormat format, uint32_t offset);
 };
@@ -309,27 +310,27 @@ struct InputAssemblyStateDesc
 {
     VkPipelineInputAssemblyStateCreateInfo create_info;
 
-	InputAssemblyStateDesc();
-	InputAssemblyStateDesc& set_flags(VkPipelineInputAssemblyStateCreateFlags flags);
+    InputAssemblyStateDesc();
+    InputAssemblyStateDesc& set_flags(VkPipelineInputAssemblyStateCreateFlags flags);
     InputAssemblyStateDesc& set_topology(VkPrimitiveTopology topology);
-	InputAssemblyStateDesc& set_primitive_restart_enable(bool primitive_restart_enable);
+    InputAssemblyStateDesc& set_primitive_restart_enable(bool primitive_restart_enable);
 };
 
 struct TessellationStateDesc
 {
     VkPipelineTessellationStateCreateInfo create_info;
 
-	TessellationStateDesc();
-	TessellationStateDesc& set_flags(VkPipelineTessellationStateCreateFlags flags);
+    TessellationStateDesc();
+    TessellationStateDesc& set_flags(VkPipelineTessellationStateCreateFlags flags);
     TessellationStateDesc& set_patch_control_points(uint32_t patch_control_points);
 };
 
 struct RasterizationStateDesc
 {
-    VkPipelineRasterizationStateCreateInfo create_info;
+    VkPipelineRasterizationStateCreateInfo                create_info;
     VkPipelineRasterizationConservativeStateCreateInfoEXT conservative_raster_create_info;
 
-	RasterizationStateDesc();
+    RasterizationStateDesc();
     RasterizationStateDesc& set_depth_clamp(VkBool32 value);
     RasterizationStateDesc& set_rasterizer_discard_enable(VkBool32 value);
     RasterizationStateDesc& set_polygon_mode(VkPolygonMode value);
@@ -342,15 +343,14 @@ struct RasterizationStateDesc
     RasterizationStateDesc& set_line_width(float value);
     RasterizationStateDesc& set_conservative_raster_mode(VkConservativeRasterizationModeEXT value);
     RasterizationStateDesc& set_extra_primitive_overestimation_size(float value);
-
 };
 
 struct MultisampleStateDesc
 {
     VkPipelineMultisampleStateCreateInfo create_info;
 
-	MultisampleStateDesc();
-	MultisampleStateDesc& set_rasterization_samples(VkSampleCountFlagBits value);
+    MultisampleStateDesc();
+    MultisampleStateDesc& set_rasterization_samples(VkSampleCountFlagBits value);
     MultisampleStateDesc& set_sample_shading_enable(VkBool32 value);
     MultisampleStateDesc& set_min_sample_shading(float value);
     MultisampleStateDesc& set_sample_mask(VkSampleMask* value);
@@ -362,7 +362,7 @@ struct StencilOpStateDesc
 {
     VkStencilOpState create_info;
 
-	StencilOpStateDesc& set_fail_op(VkStencilOp value);
+    StencilOpStateDesc& set_fail_op(VkStencilOp value);
     StencilOpStateDesc& set_pass_op(VkStencilOp value);
     StencilOpStateDesc& set_depth_fail_op(VkStencilOp value);
     StencilOpStateDesc& set_compare_op(VkCompareOp value);
@@ -389,47 +389,65 @@ struct DepthStencilStateDesc
 
 struct ColorBlendAttachmentStateDesc
 {
-    ColorBlendAttachmentStateDesc& set_blend_enable();
-    ColorBlendAttachmentStateDesc& set_src_color_blend_factor();
-    ColorBlendAttachmentStateDesc& set_dst_color_blend_Factor();
-    ColorBlendAttachmentStateDesc& set_color_blend_op();
-    ColorBlendAttachmentStateDesc& set_src_alpha_blend_factor();
-    ColorBlendAttachmentStateDesc& set_dst_alpha_blend_factor();
-    ColorBlendAttachmentStateDesc& set_alpha_blend_op();
-    ColorBlendAttachmentStateDesc& set_color_write_mask();
+    VkPipelineColorBlendAttachmentState create_info;
+
+    ColorBlendAttachmentStateDesc& set_blend_enable(VkBool32 value);
+    ColorBlendAttachmentStateDesc& set_src_color_blend_factor(VkBlendFactor value);
+    ColorBlendAttachmentStateDesc& set_dst_color_blend_Factor(VkBlendFactor value);
+    ColorBlendAttachmentStateDesc& set_color_blend_op(VkBlendOp value);
+    ColorBlendAttachmentStateDesc& set_src_alpha_blend_factor(VkBlendFactor value);
+    ColorBlendAttachmentStateDesc& set_dst_alpha_blend_factor(VkBlendFactor value);
+    ColorBlendAttachmentStateDesc& set_alpha_blend_op(VkBlendOp value);
+    ColorBlendAttachmentStateDesc& set_color_write_mask(VkColorComponentFlags value);
 };
 
-//typedef struct VkPipelineColorBlendStateCreateInfo
-//{
-//    VkStructureType                            sType;
-//    const void*                                pNext;
-//    VkPipelineColorBlendStateCreateFlags       flags;
-//    VkBool32                                   logicOpEnable;
-//    VkLogicOp                                  logicOp;
-//    uint32_t                                   attachmentCount;
-//    const VkPipelineColorBlendAttachmentState* pAttachments;
-//    float                                      blendConstants[4];
-//} VkPipelineColorBlendStateCreateInfo;
+struct ColorBlendStateDesc
+{
+    VkPipelineColorBlendStateCreateInfo create_info;
+    VkPipelineColorBlendAttachmentState attachments[32];
+
+    ColorBlendStateDesc();
+    ColorBlendStateDesc& set_logic_op_enable(VkBool32 value);
+    ColorBlendStateDesc& set_logic_op(VkLogicOp value);
+    ColorBlendStateDesc& add_attachment(ColorBlendAttachmentStateDesc att);
+    ColorBlendStateDesc& set_blend_constants(float r, float g, float b, float a);
+};
 
 class GraphicsPipeline : public Object
 {
 public:
     using Ptr = std::shared_ptr<GraphicsPipeline>;
 
-	struct Desc
-	{
-		uint32_t       shader_module_count = 0;
-		VkShaderModule modules[6];
+    struct Desc
+    {
+        VkGraphicsPipelineCreateInfo create_info;
+        uint32_t       shader_stage_count = 0;
+        VkPipelineShaderStageCreateInfo shader_stages[6];
+        std::string                     shader_entry_names[6];
 
-		Desc& add_shader_module(ShaderModule::Ptr shader_module);
-	};
+		Desc();
+        Desc& add_shader_module(VkShaderStageFlagBits stage, ShaderModule::Ptr shader_module, std::string name);
+        Desc& set_input_assembly_state(InputAssemblyStateDesc state);
+        Desc& set_tessellation_state(TessellationStateDesc state);
+        Desc& set_rasterization_state(RasterizationStateDesc state);
+        Desc& set_multisample_state(MultisampleStateDesc state);
+        Desc& set_depth_stencil_state(DepthStencilStateDesc state);
+        Desc& set_color_blend_state(ColorBlendStateDesc state);
+        Desc& set_pipeline_layout(std::shared_ptr<PipelineLayout> layout);
+        Desc& set_render_pass(RenderPass::Ptr render_pass);
+        Desc& set_sub_pass(uint32_t subpass);
+        Desc& set_base_pipeline(GraphicsPipeline::Ptr pipeline);
+        Desc& set_base_pipeline_index(int32_t index);
+    };
 
-	static GraphicsPipeline::Ptr create(Backend::Ptr backend, Desc desc);
+    static GraphicsPipeline::Ptr create(Backend::Ptr backend, Desc desc);
 
-	~GraphicsPipeline();
+	inline VkPipeline handle() { return m_vk_pipeline; }
+
+    ~GraphicsPipeline();
 
 private:
-        GraphicsPipeline(Backend::Ptr backend, Desc desc);
+    GraphicsPipeline(Backend::Ptr backend, Desc desc);
 
 private:
     VkPipeline m_vk_pipeline;
@@ -442,9 +460,19 @@ public:
 
     struct Desc
     {
+        VkComputePipelineCreateInfo create_info;
+        std::string                 shader_entry_name;
+
+		Desc();
+        Desc& set_shader_module(ShaderModule::Ptr shader_module, std::string name);
+		Desc& set_pipeline_layout(std::shared_ptr<PipelineLayout> layout);
+        Desc& set_base_pipeline(ComputePipeline::Ptr pipeline);
+        Desc& set_base_pipeline_index(int32_t index);
     };
 
     static ComputePipeline::Ptr create(Backend::Ptr backend, Desc desc);
+
+    inline VkPipeline handle() { return m_vk_pipeline; }
 
     ~ComputePipeline();
 
@@ -460,31 +488,31 @@ class Sampler : public Object
 public:
     using Ptr = std::shared_ptr<Sampler>;
 
-	struct Desc
-	{
-        VkSamplerCreateFlags     flags;
-		VkFilter                 mag_filter;
-		VkFilter                 min_filter;
-		VkSamplerMipmapMode      mipmap_mode;
-		VkSamplerAddressMode     address_mode_u;
-		VkSamplerAddressMode     address_mode_v;
-		VkSamplerAddressMode     address_mode_w;
-		float                    mip_lod_bias;
-		VkBool32                 anisotropy_enable;
-		float                    max_anisotropy;
-		VkBool32                 compare_enable;
-		VkCompareOp              compare_op;
-		float                    min_lod;
-		float                    max_lod;
-		VkBorderColor            border_color;
-		VkBool32                 unnormalized_coordinates;
-	};
+    struct Desc
+    {
+        VkSamplerCreateFlags flags;
+        VkFilter             mag_filter;
+        VkFilter             min_filter;
+        VkSamplerMipmapMode  mipmap_mode;
+        VkSamplerAddressMode address_mode_u;
+        VkSamplerAddressMode address_mode_v;
+        VkSamplerAddressMode address_mode_w;
+        float                mip_lod_bias;
+        VkBool32             anisotropy_enable;
+        float                max_anisotropy;
+        VkBool32             compare_enable;
+        VkCompareOp          compare_op;
+        float                min_lod;
+        float                max_lod;
+        VkBorderColor        border_color;
+        VkBool32             unnormalized_coordinates;
+    };
 
     inline VkSampler handle() { return m_vk_sampler; }
 
-    static Sampler::Ptr create(Backend::Ptr backend,  Desc desc);
-	
-	~Sampler();
+    static Sampler::Ptr create(Backend::Ptr backend, Desc desc);
+
+    ~Sampler();
 
 private:
     Sampler(Backend::Ptr backend, Desc desc);

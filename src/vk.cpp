@@ -890,7 +890,6 @@ DepthStencilStateDesc& DepthStencilStateDesc::set_front(StencilOpStateDesc value
 {
     create_info.front = value.create_info;
     return *this;
-
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------
@@ -919,65 +918,230 @@ DepthStencilStateDesc& DepthStencilStateDesc::set_max_depth_bounds(float value)
 
 // -----------------------------------------------------------------------------------------------------------------------------------
 
-ColorBlendAttachmentStateDesc& ColorBlendAttachmentStateDesc::set_blend_enable()
+ColorBlendAttachmentStateDesc& ColorBlendAttachmentStateDesc::set_blend_enable(VkBool32 value)
 {
+    create_info.blendEnable = value;
     return *this;
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------
 
-ColorBlendAttachmentStateDesc& ColorBlendAttachmentStateDesc::set_src_color_blend_factor()
+ColorBlendAttachmentStateDesc& ColorBlendAttachmentStateDesc::set_src_color_blend_factor(VkBlendFactor value)
 {
+    create_info.srcColorBlendFactor = value;
     return *this;
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------
 
-ColorBlendAttachmentStateDesc& ColorBlendAttachmentStateDesc::set_dst_color_blend_Factor()
+ColorBlendAttachmentStateDesc& ColorBlendAttachmentStateDesc::set_dst_color_blend_Factor(VkBlendFactor value)
 {
+    create_info.dstColorBlendFactor = value;
     return *this;
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------
 
-ColorBlendAttachmentStateDesc& ColorBlendAttachmentStateDesc::set_color_blend_op()
+ColorBlendAttachmentStateDesc& ColorBlendAttachmentStateDesc::set_color_blend_op(VkBlendOp value)
 {
+    create_info.colorBlendOp = value;
     return *this;
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------
 
-ColorBlendAttachmentStateDesc& ColorBlendAttachmentStateDesc::set_src_alpha_blend_factor()
+ColorBlendAttachmentStateDesc& ColorBlendAttachmentStateDesc::set_src_alpha_blend_factor(VkBlendFactor value)
 {
+    create_info.srcAlphaBlendFactor = value;
     return *this;
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------
 
-ColorBlendAttachmentStateDesc& ColorBlendAttachmentStateDesc::set_dst_alpha_blend_factor()
+ColorBlendAttachmentStateDesc& ColorBlendAttachmentStateDesc::set_dst_alpha_blend_factor(VkBlendFactor value)
 {
+    create_info.dstAlphaBlendFactor = value;
     return *this;
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------
 
-ColorBlendAttachmentStateDesc& ColorBlendAttachmentStateDesc::set_alpha_blend_op()
+ColorBlendAttachmentStateDesc& ColorBlendAttachmentStateDesc::set_alpha_blend_op(VkBlendOp value)
 {
+    create_info.alphaBlendOp = value;
     return *this;
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------
 
-ColorBlendAttachmentStateDesc& ColorBlendAttachmentStateDesc::set_color_write_mask()
+ColorBlendAttachmentStateDesc& ColorBlendAttachmentStateDesc::set_color_write_mask(VkColorComponentFlags value)
 {
+    create_info.colorWriteMask = value;
     return *this;
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------
 
-GraphicsPipeline::Desc& GraphicsPipeline::Desc::add_shader_module(ShaderModule::Ptr shader_module)
+ColorBlendStateDesc::ColorBlendStateDesc()
 {
-    modules[shader_module_count++] = shader_module->handle();
+    INFERNO_ZERO_MEMORY(create_info);
+
+    create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+ColorBlendStateDesc& ColorBlendStateDesc::set_logic_op_enable(VkBool32 value)
+{
+    create_info.logicOpEnable = value;
+    return *this;
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+ColorBlendStateDesc& ColorBlendStateDesc::set_logic_op(VkLogicOp value)
+{
+    create_info.logicOp = value;
+    return *this;
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+ColorBlendStateDesc& ColorBlendStateDesc::add_attachment(ColorBlendAttachmentStateDesc att)
+{
+    if (create_info.attachmentCount == 0)
+        create_info.pAttachments = &attachments[0];
+
+    attachments[create_info.attachmentCount++] = att.create_info;
+
+    return *this;
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+ColorBlendStateDesc& ColorBlendStateDesc::set_blend_constants(float r, float g, float b, float a)
+{
+    create_info.blendConstants[0] = r;
+    create_info.blendConstants[1] = g;
+    create_info.blendConstants[2] = b;
+    create_info.blendConstants[3] = a;
+    return *this;
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+GraphicsPipeline::Desc::Desc()
+{
+    INFERNO_ZERO_MEMORY(create_info);
+
+    create_info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+
+    for (uint32_t i = 0; i < 6; i++)
+    {
+        INFERNO_ZERO_MEMORY(shader_stages[i]);
+        shader_stages[i].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    }
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+GraphicsPipeline::Desc& GraphicsPipeline::Desc::add_shader_module(VkShaderStageFlagBits stage, ShaderModule::Ptr shader_module, std::string name)
+{
+    uint32_t idx = shader_stage_count++;
+
+    shader_entry_names[idx]   = name;
+    shader_stages[idx].module = shader_module->handle();
+    shader_stages[idx].pName  = shader_entry_names[idx].c_str();
+    shader_stages[idx].stage  = stage;
+
+    return *this;
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+GraphicsPipeline::Desc& GraphicsPipeline::Desc::set_input_assembly_state(InputAssemblyStateDesc state)
+{
+    create_info.pInputAssemblyState = &state.create_info;
+    return *this;
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+GraphicsPipeline::Desc& GraphicsPipeline::Desc::set_tessellation_state(TessellationStateDesc state)
+{
+    create_info.pTessellationState = &state.create_info;
+    return *this;
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+GraphicsPipeline::Desc& GraphicsPipeline::Desc::set_rasterization_state(RasterizationStateDesc state)
+{
+    create_info.pRasterizationState = &state.create_info;
+    return *this;
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+GraphicsPipeline::Desc& GraphicsPipeline::Desc::set_multisample_state(MultisampleStateDesc state)
+{
+    create_info.pMultisampleState = &state.create_info;
+    return *this;
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+GraphicsPipeline::Desc& GraphicsPipeline::Desc::set_depth_stencil_state(DepthStencilStateDesc state)
+{
+    create_info.pDepthStencilState = &state.create_info;
+    return *this;
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+GraphicsPipeline::Desc& GraphicsPipeline::Desc::set_color_blend_state(ColorBlendStateDesc state)
+{
+    create_info.pColorBlendState = &state.create_info;
+    return *this;
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+GraphicsPipeline::Desc& GraphicsPipeline::Desc::set_pipeline_layout(std::shared_ptr<PipelineLayout> layout)
+{
+    create_info.layout = layout->handle();
+    return *this;
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+GraphicsPipeline::Desc& GraphicsPipeline::Desc::set_render_pass(RenderPass::Ptr render_pass)
+{
+    create_info.renderPass = render_pass->handle();
+    return *this;
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+GraphicsPipeline::Desc& GraphicsPipeline::Desc::set_sub_pass(uint32_t subpass)
+{
+    create_info.subpass = subpass;
+    return *this;
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+GraphicsPipeline::Desc& GraphicsPipeline::Desc::set_base_pipeline(GraphicsPipeline::Ptr pipeline)
+{
+    create_info.basePipelineHandle = pipeline->handle();
+    return *this;
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+GraphicsPipeline::Desc& GraphicsPipeline::Desc::set_base_pipeline_index(int32_t index)
+{
+    create_info.basePipelineIndex = index;
     return *this;
 }
 
@@ -993,10 +1157,7 @@ GraphicsPipeline::Ptr GraphicsPipeline::create(Backend::Ptr backend, Desc desc)
 GraphicsPipeline::GraphicsPipeline(Backend::Ptr backend, Desc desc) :
     Object(backend)
 {
-    VkGraphicsPipelineCreateInfo pipeline_info;
-    INFERNO_ZERO_MEMORY(pipeline_info);
-
-    if (vkCreateGraphicsPipelines(backend->device(), nullptr, 1, &pipeline_info, nullptr, &m_vk_pipeline) != VK_SUCCESS)
+    if (vkCreateGraphicsPipelines(backend->device(), nullptr, 1, &desc.create_info, nullptr, &m_vk_pipeline) != VK_SUCCESS)
     {
         INFERNO_LOG_FATAL("(Vulkan) Failed to create Graphics Pipeline.");
         throw std::runtime_error("(Vulkan) Failed to create Graphics Pipeline.");
@@ -1020,6 +1181,52 @@ GraphicsPipeline::~GraphicsPipeline()
 
 // -----------------------------------------------------------------------------------------------------------------------------------
 
+ComputePipeline::Desc::Desc()
+{
+    INFERNO_ZERO_MEMORY(create_info);
+
+    create_info.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
+    create_info.stage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+ComputePipeline::Desc& ComputePipeline::Desc::set_shader_module(ShaderModule::Ptr shader_module, std::string name)
+{
+    shader_entry_name = name;
+    create_info.stage.pName = shader_entry_name.c_str();
+    create_info.stage.module = shader_module->handle();
+    create_info.stage.stage  = VK_SHADER_STAGE_COMPUTE_BIT;
+	
+	return *this;
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+ComputePipeline::Desc& ComputePipeline::Desc::set_pipeline_layout(std::shared_ptr<PipelineLayout> layout)
+{
+    create_info.layout = layout->handle();
+    return *this;
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+ComputePipeline::Desc& ComputePipeline::Desc::set_base_pipeline(ComputePipeline::Ptr pipeline)
+{
+    create_info.basePipelineHandle = pipeline->handle();
+    return *this;
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+ComputePipeline::Desc& ComputePipeline::Desc::set_base_pipeline_index(int32_t index)
+{
+    create_info.basePipelineIndex = index;
+    return *this;
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
 ComputePipeline::Ptr ComputePipeline::create(Backend::Ptr backend, Desc desc)
 {
     return std::shared_ptr<ComputePipeline>(new ComputePipeline(backend, desc));
@@ -1030,10 +1237,7 @@ ComputePipeline::Ptr ComputePipeline::create(Backend::Ptr backend, Desc desc)
 ComputePipeline::ComputePipeline(Backend::Ptr backend, Desc desc) :
     Object(backend)
 {
-    VkComputePipelineCreateInfo pipeline_info;
-    INFERNO_ZERO_MEMORY(pipeline_info);
-
-    if (vkCreateComputePipelines(backend->device(), nullptr, 1, &pipeline_info, nullptr, &m_vk_pipeline) != VK_SUCCESS)
+    if (vkCreateComputePipelines(backend->device(), nullptr, 1, &desc.create_info, nullptr, &m_vk_pipeline) != VK_SUCCESS)
     {
         INFERNO_LOG_FATAL("(Vulkan) Failed to create Compute Pipeline.");
         throw std::runtime_error("(Vulkan) Failed to create Compute Pipeline.");
