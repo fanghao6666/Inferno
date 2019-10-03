@@ -224,7 +224,8 @@ public:
 
     inline VkBuffer handle() { return m_vk_buffer; }
     inline size_t   size() { return m_size; }
-
+    inline void*    mapped_ptr() { return m_mapped_ptr; }
+		 
 private:
     Buffer(Backend::Ptr backend, VkBufferUsageFlags usage, size_t size, VmaMemoryUsage memory_usage, VkFlags create_flags);
 
@@ -275,6 +276,141 @@ private:
     std::weak_ptr<CommandPool> m_vk_pool;
 };
 
+class ShaderModule : public Object
+{
+public:
+    using Ptr = std::shared_ptr<ShaderModule>;
+
+	static ShaderModule::Ptr create(Backend::Ptr backend, std::vector<uint32_t> spirv);
+	
+    ~ShaderModule();
+
+	inline VkShaderModule handle() { return m_vk_module; }
+
+private:
+	ShaderModule(Backend::Ptr backend, std::vector<uint32_t> spirv);
+
+private:
+    VkShaderModule m_vk_module;
+};
+
+struct VertexInputStateDesc
+{
+    VkPipelineVertexInputStateCreateInfo create_info;
+    VkVertexInputBindingDescription binding_desc[16];
+    VkVertexInputAttributeDescription attribute_desc[16];
+
+	VertexInputStateDesc();
+    VertexInputStateDesc& add_binding_desc(uint32_t binding, uint32_t stride, VkVertexInputRate input_rate);
+    VertexInputStateDesc& add_attribute_desc(uint32_t location, uint32_t binding, VkFormat format, uint32_t offset);
+};
+
+struct InputAssemblyStateDesc
+{
+    VkPipelineInputAssemblyStateCreateInfo create_info;
+
+	InputAssemblyStateDesc();
+	InputAssemblyStateDesc& set_flags(VkPipelineInputAssemblyStateCreateFlags flags);
+    InputAssemblyStateDesc& set_topology(VkPrimitiveTopology topology);
+	InputAssemblyStateDesc& set_primitive_restart_enable(bool primitive_restart_enable);
+};
+
+struct TessellationStateDesc
+{
+    VkPipelineTessellationStateCreateInfo create_info;
+
+	TessellationStateDesc();
+	TessellationStateDesc& set_flags(VkPipelineTessellationStateCreateFlags flags);
+    TessellationStateDesc& set_patch_control_points(uint32_t patch_control_points);
+};
+
+struct RasterizationStateDesc
+{
+    VkPipelineRasterizationStateCreateInfo create_info;
+    VkPipelineRasterizationConservativeStateCreateInfoEXT conservative_raster_create_info;
+
+	RasterizationStateDesc();
+    RasterizationStateDesc& set_depth_clamp(VkBool32 value);
+    RasterizationStateDesc& set_rasterizer_discard_enable(VkBool32 value);
+    RasterizationStateDesc& set_polygon_mode(VkPolygonMode value);
+    RasterizationStateDesc& set_cull_mode(VkCullModeFlags value);
+    RasterizationStateDesc& set_front_face(VkFrontFace value);
+    RasterizationStateDesc& set_depth_bias(VkBool32 value);
+    RasterizationStateDesc& set_depth_bias_constant_factor(float value);
+    RasterizationStateDesc& set_depth_bias_clamp(float value);
+    RasterizationStateDesc& set_depth_bias_slope_factor(float value);
+    RasterizationStateDesc& set_line_width(float value);
+    RasterizationStateDesc& set_conservative_raster_mode(VkConservativeRasterizationModeEXT value);
+    RasterizationStateDesc& set_extra_primitive_overestimation_size(float value);
+
+};
+
+struct MultisampleStateDesc
+{
+    VkPipelineMultisampleStateCreateInfo create_info;
+
+	MultisampleStateDesc();
+	MultisampleStateDesc& set_rasterization_samples(VkSampleCountFlagBits value);
+    MultisampleStateDesc& set_sample_shading_enable(VkBool32 value);
+    MultisampleStateDesc& set_min_sample_shading(float value);
+    MultisampleStateDesc& set_sample_mask(VkSampleMask* value);
+    MultisampleStateDesc& set_alpha_to_coverage_enable(VkBool32 value);
+    MultisampleStateDesc& set_alpha_to_one_enable(VkBool32 value);
+};
+
+struct StencilOpStateDesc
+{
+    VkStencilOpState create_info;
+
+	StencilOpStateDesc& set_fail_op(VkStencilOp value);
+    StencilOpStateDesc& set_pass_op(VkStencilOp value);
+    StencilOpStateDesc& set_depth_fail_op(VkStencilOp value);
+    StencilOpStateDesc& set_compare_op(VkCompareOp value);
+    StencilOpStateDesc& set_compare_mask(uint32_t value);
+    StencilOpStateDesc& set_write_mask(uint32_t value);
+    StencilOpStateDesc& set_reference(uint32_t value);
+};
+
+struct DepthStencilStateDesc
+{
+    VkPipelineDepthStencilStateCreateInfo create_info;
+
+    DepthStencilStateDesc();
+    DepthStencilStateDesc& set_depth_test_enable(VkBool32 value);
+    DepthStencilStateDesc& set_depth_write_enable(VkBool32 value);
+    DepthStencilStateDesc& set_depth_compare_op(VkCompareOp value);
+    DepthStencilStateDesc& set_depth_bounds_test_enable(VkBool32 value);
+    DepthStencilStateDesc& set_stencil_test_enable(VkBool32 value);
+    DepthStencilStateDesc& set_front(StencilOpStateDesc value);
+    DepthStencilStateDesc& set_back(StencilOpStateDesc value);
+    DepthStencilStateDesc& set_min_depth_bounds(float value);
+    DepthStencilStateDesc& set_max_depth_bounds(float value);
+};
+
+struct ColorBlendAttachmentStateDesc
+{
+    ColorBlendAttachmentStateDesc& set_blend_enable();
+    ColorBlendAttachmentStateDesc& set_src_color_blend_factor();
+    ColorBlendAttachmentStateDesc& set_dst_color_blend_Factor();
+    ColorBlendAttachmentStateDesc& set_color_blend_op();
+    ColorBlendAttachmentStateDesc& set_src_alpha_blend_factor();
+    ColorBlendAttachmentStateDesc& set_dst_alpha_blend_factor();
+    ColorBlendAttachmentStateDesc& set_alpha_blend_op();
+    ColorBlendAttachmentStateDesc& set_color_write_mask();
+};
+
+//typedef struct VkPipelineColorBlendStateCreateInfo
+//{
+//    VkStructureType                            sType;
+//    const void*                                pNext;
+//    VkPipelineColorBlendStateCreateFlags       flags;
+//    VkBool32                                   logicOpEnable;
+//    VkLogicOp                                  logicOp;
+//    uint32_t                                   attachmentCount;
+//    const VkPipelineColorBlendAttachmentState* pAttachments;
+//    float                                      blendConstants[4];
+//} VkPipelineColorBlendStateCreateInfo;
+
 class GraphicsPipeline : public Object
 {
 public:
@@ -282,7 +418,10 @@ public:
 
 	struct Desc
 	{
+		uint32_t       shader_module_count = 0;
+		VkShaderModule modules[6];
 
+		Desc& add_shader_module(ShaderModule::Ptr shader_module);
 	};
 
 	static GraphicsPipeline::Ptr create(Backend::Ptr backend, Desc desc);

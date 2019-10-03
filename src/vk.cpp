@@ -483,6 +483,506 @@ void CommandBuffer::reset()
 
 // -----------------------------------------------------------------------------------------------------------------------------------
 
+ShaderModule::Ptr ShaderModule::create(Backend::Ptr backend, std::vector<uint32_t> spirv)
+{
+    return std::shared_ptr<ShaderModule>(new ShaderModule(backend, spirv));
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+ShaderModule::ShaderModule(Backend::Ptr backend, std::vector<uint32_t> spirv) :
+    Object(backend)
+{
+    VkShaderModuleCreateInfo create_info;
+    INFERNO_ZERO_MEMORY(create_info);
+
+    create_info.sType    = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+    create_info.codeSize = spirv.size();
+    create_info.pCode    = reinterpret_cast<const uint32_t*>(spirv.data());
+
+    VkShaderModule shader_module;
+
+    if (vkCreateShaderModule(backend->device(), &create_info, nullptr, &shader_module) != VK_SUCCESS)
+    {
+        INFERNO_LOG_FATAL("(Vulkan) Failed to create shader module.");
+        throw std::runtime_error("(Vulkan) Failed to create shader module.");
+    }
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+ShaderModule::~ShaderModule()
+{
+    if (m_vk_backend.expired())
+    {
+        INFERNO_LOG_FATAL("(Vulkan) Destructing after Device.");
+        throw std::runtime_error("(Vulkan) Destructing after Device.");
+    }
+
+    auto backend = m_vk_backend.lock();
+
+    vkDestroyShaderModule(backend->device(), m_vk_module, nullptr);
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+VertexInputStateDesc::VertexInputStateDesc()
+{
+    INFERNO_ZERO_MEMORY(create_info);
+
+    create_info.sType                        = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+    create_info.pVertexAttributeDescriptions = &attribute_desc[0];
+    create_info.pVertexBindingDescriptions   = &binding_desc[0];
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+VertexInputStateDesc& VertexInputStateDesc::add_binding_desc(uint32_t binding, uint32_t stride, VkVertexInputRate input_rate)
+{
+    binding_desc[create_info.vertexBindingDescriptionCount++] = { binding, stride, input_rate };
+    return *this;
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+VertexInputStateDesc& VertexInputStateDesc::add_attribute_desc(uint32_t location, uint32_t binding, VkFormat format, uint32_t offset)
+{
+    attribute_desc[create_info.vertexAttributeDescriptionCount++] = { location, binding, format, offset };
+    return *this;
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+InputAssemblyStateDesc::InputAssemblyStateDesc()
+{
+    INFERNO_ZERO_MEMORY(create_info);
+
+    create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+InputAssemblyStateDesc& InputAssemblyStateDesc::set_flags(VkPipelineInputAssemblyStateCreateFlags flags)
+{
+    create_info.flags = flags;
+    return *this;
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+InputAssemblyStateDesc& InputAssemblyStateDesc::set_topology(VkPrimitiveTopology topology)
+{
+    create_info.topology = topology;
+    return *this;
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+InputAssemblyStateDesc& InputAssemblyStateDesc::set_primitive_restart_enable(bool primitive_restart_enable)
+{
+    create_info.primitiveRestartEnable = primitive_restart_enable;
+    return *this;
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+TessellationStateDesc::TessellationStateDesc()
+{
+    INFERNO_ZERO_MEMORY(create_info);
+
+    create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_STATE_CREATE_INFO;
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+TessellationStateDesc& TessellationStateDesc::set_flags(VkPipelineTessellationStateCreateFlags flags)
+{
+    create_info.flags = flags;
+    return *this;
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+TessellationStateDesc& TessellationStateDesc::set_patch_control_points(uint32_t patch_control_points)
+{
+    create_info.patchControlPoints = patch_control_points;
+    return *this;
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+RasterizationStateDesc::RasterizationStateDesc()
+{
+    INFERNO_ZERO_MEMORY(create_info);
+    INFERNO_ZERO_MEMORY(conservative_raster_create_info);
+
+    create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+
+    conservative_raster_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_CONSERVATIVE_STATE_CREATE_INFO_EXT;
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+RasterizationStateDesc& RasterizationStateDesc::set_depth_clamp(VkBool32 value)
+{
+    create_info.depthClampEnable = value;
+    return *this;
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+RasterizationStateDesc& RasterizationStateDesc::set_rasterizer_discard_enable(VkBool32 value)
+{
+    create_info.rasterizerDiscardEnable = value;
+    return *this;
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+RasterizationStateDesc& RasterizationStateDesc::set_polygon_mode(VkPolygonMode value)
+{
+    create_info.polygonMode = value;
+    return *this;
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+RasterizationStateDesc& RasterizationStateDesc::set_cull_mode(VkCullModeFlags value)
+{
+    create_info.cullMode = value;
+    return *this;
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+RasterizationStateDesc& RasterizationStateDesc::set_front_face(VkFrontFace value)
+{
+    create_info.frontFace = value;
+    return *this;
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+RasterizationStateDesc& RasterizationStateDesc::set_depth_bias(VkBool32 value)
+{
+    create_info.depthBiasEnable = value;
+    return *this;
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+RasterizationStateDesc& RasterizationStateDesc::set_depth_bias_constant_factor(float value)
+{
+    create_info.depthBiasConstantFactor = value;
+    return *this;
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+RasterizationStateDesc& RasterizationStateDesc::set_depth_bias_clamp(float value)
+{
+    create_info.depthBiasClamp = value;
+    return *this;
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+RasterizationStateDesc& RasterizationStateDesc::set_depth_bias_slope_factor(float value)
+{
+    create_info.depthBiasSlopeFactor = value;
+    return *this;
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+RasterizationStateDesc& RasterizationStateDesc::set_line_width(float value)
+{
+    create_info.lineWidth = value;
+    return *this;
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+RasterizationStateDesc& RasterizationStateDesc::set_conservative_raster_mode(VkConservativeRasterizationModeEXT value)
+{
+    if (value != VK_CONSERVATIVE_RASTERIZATION_MODE_DISABLED_EXT)
+        create_info.pNext = &conservative_raster_create_info;
+
+    conservative_raster_create_info.conservativeRasterizationMode = value;
+
+    return *this;
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+RasterizationStateDesc& RasterizationStateDesc::set_extra_primitive_overestimation_size(float value)
+{
+    conservative_raster_create_info.extraPrimitiveOverestimationSize = value;
+
+    return *this;
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+MultisampleStateDesc::MultisampleStateDesc()
+{
+    INFERNO_ZERO_MEMORY(create_info);
+
+    create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+MultisampleStateDesc& MultisampleStateDesc::set_rasterization_samples(VkSampleCountFlagBits value)
+{
+    create_info.rasterizationSamples = value;
+    return *this;
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+MultisampleStateDesc& MultisampleStateDesc::set_sample_shading_enable(VkBool32 value)
+{
+    create_info.sampleShadingEnable = value;
+    return *this;
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+MultisampleStateDesc& MultisampleStateDesc::set_min_sample_shading(float value)
+{
+    create_info.minSampleShading = value;
+    return *this;
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+MultisampleStateDesc& MultisampleStateDesc::set_sample_mask(VkSampleMask* value)
+{
+    create_info.pSampleMask = value;
+    return *this;
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+MultisampleStateDesc& MultisampleStateDesc::set_alpha_to_coverage_enable(VkBool32 value)
+{
+    create_info.alphaToCoverageEnable = value;
+    return *this;
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+MultisampleStateDesc& MultisampleStateDesc::set_alpha_to_one_enable(VkBool32 value)
+{
+    create_info.alphaToOneEnable = value;
+    return *this;
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+StencilOpStateDesc& StencilOpStateDesc::set_fail_op(VkStencilOp value)
+{
+    create_info.failOp = value;
+    return *this;
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+StencilOpStateDesc& StencilOpStateDesc::set_pass_op(VkStencilOp value)
+{
+    create_info.passOp = value;
+    return *this;
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+StencilOpStateDesc& StencilOpStateDesc::set_depth_fail_op(VkStencilOp value)
+{
+    create_info.depthFailOp = value;
+    return *this;
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+StencilOpStateDesc& StencilOpStateDesc::set_compare_op(VkCompareOp value)
+{
+    create_info.compareOp = value;
+    return *this;
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+StencilOpStateDesc& StencilOpStateDesc::set_compare_mask(uint32_t value)
+{
+    create_info.compareMask = value;
+    return *this;
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+StencilOpStateDesc& StencilOpStateDesc::set_write_mask(uint32_t value)
+{
+    create_info.writeMask = value;
+    return *this;
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+StencilOpStateDesc& StencilOpStateDesc::set_reference(uint32_t value)
+{
+    create_info.reference = value;
+    return *this;
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+DepthStencilStateDesc::DepthStencilStateDesc()
+{
+    INFERNO_ZERO_MEMORY(create_info);
+
+    create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+DepthStencilStateDesc& DepthStencilStateDesc::set_depth_test_enable(VkBool32 value)
+{
+    create_info.depthTestEnable = value;
+    return *this;
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+DepthStencilStateDesc& DepthStencilStateDesc::set_depth_write_enable(VkBool32 value)
+{
+    create_info.depthWriteEnable = value;
+    return *this;
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+DepthStencilStateDesc& DepthStencilStateDesc::set_depth_compare_op(VkCompareOp value)
+{
+    create_info.depthCompareOp = value;
+    return *this;
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+DepthStencilStateDesc& DepthStencilStateDesc::set_depth_bounds_test_enable(VkBool32 value)
+{
+    create_info.depthBoundsTestEnable = value;
+    return *this;
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+DepthStencilStateDesc& DepthStencilStateDesc::set_stencil_test_enable(VkBool32 value)
+{
+    create_info.stencilTestEnable = value;
+    return *this;
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+DepthStencilStateDesc& DepthStencilStateDesc::set_front(StencilOpStateDesc value)
+{
+    create_info.front = value.create_info;
+    return *this;
+
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+DepthStencilStateDesc& DepthStencilStateDesc::set_back(StencilOpStateDesc value)
+{
+    create_info.back = value.create_info;
+    return *this;
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+DepthStencilStateDesc& DepthStencilStateDesc::set_min_depth_bounds(float value)
+{
+    create_info.minDepthBounds = value;
+    return *this;
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+DepthStencilStateDesc& DepthStencilStateDesc::set_max_depth_bounds(float value)
+{
+    create_info.maxDepthBounds = value;
+    return *this;
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+ColorBlendAttachmentStateDesc& ColorBlendAttachmentStateDesc::set_blend_enable()
+{
+    return *this;
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+ColorBlendAttachmentStateDesc& ColorBlendAttachmentStateDesc::set_src_color_blend_factor()
+{
+    return *this;
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+ColorBlendAttachmentStateDesc& ColorBlendAttachmentStateDesc::set_dst_color_blend_Factor()
+{
+    return *this;
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+ColorBlendAttachmentStateDesc& ColorBlendAttachmentStateDesc::set_color_blend_op()
+{
+    return *this;
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+ColorBlendAttachmentStateDesc& ColorBlendAttachmentStateDesc::set_src_alpha_blend_factor()
+{
+    return *this;
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+ColorBlendAttachmentStateDesc& ColorBlendAttachmentStateDesc::set_dst_alpha_blend_factor()
+{
+    return *this;
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+ColorBlendAttachmentStateDesc& ColorBlendAttachmentStateDesc::set_alpha_blend_op()
+{
+    return *this;
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+ColorBlendAttachmentStateDesc& ColorBlendAttachmentStateDesc::set_color_write_mask()
+{
+    return *this;
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
+GraphicsPipeline::Desc& GraphicsPipeline::Desc::add_shader_module(ShaderModule::Ptr shader_module)
+{
+    modules[shader_module_count++] = shader_module->handle();
+    return *this;
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+
 GraphicsPipeline::Ptr GraphicsPipeline::create(Backend::Ptr backend, Desc desc)
 {
     return std::shared_ptr<GraphicsPipeline>(new GraphicsPipeline(backend, desc));
@@ -496,8 +996,7 @@ GraphicsPipeline::GraphicsPipeline(Backend::Ptr backend, Desc desc) :
     VkGraphicsPipelineCreateInfo pipeline_info;
     INFERNO_ZERO_MEMORY(pipeline_info);
 
-
-    if (vkCreateGraphicsPipelines(backend->device(), nullptr, 1, & pipeline_info, nullptr, &m_vk_pipeline) != VK_SUCCESS)
+    if (vkCreateGraphicsPipelines(backend->device(), nullptr, 1, &pipeline_info, nullptr, &m_vk_pipeline) != VK_SUCCESS)
     {
         INFERNO_LOG_FATAL("(Vulkan) Failed to create Graphics Pipeline.");
         throw std::runtime_error("(Vulkan) Failed to create Graphics Pipeline.");
@@ -531,10 +1030,10 @@ ComputePipeline::Ptr ComputePipeline::create(Backend::Ptr backend, Desc desc)
 ComputePipeline::ComputePipeline(Backend::Ptr backend, Desc desc) :
     Object(backend)
 {
-    VkGraphicsPipelineCreateInfo pipeline_info;
+    VkComputePipelineCreateInfo pipeline_info;
     INFERNO_ZERO_MEMORY(pipeline_info);
 
-    if (vkCreateGraphicsPipelines(backend->device(), nullptr, 1, &pipeline_info, nullptr, &m_vk_pipeline) != VK_SUCCESS)
+    if (vkCreateComputePipelines(backend->device(), nullptr, 1, &pipeline_info, nullptr, &m_vk_pipeline) != VK_SUCCESS)
     {
         INFERNO_LOG_FATAL("(Vulkan) Failed to create Compute Pipeline.");
         throw std::runtime_error("(Vulkan) Failed to create Compute Pipeline.");
@@ -570,25 +1069,25 @@ Sampler::Sampler(Backend::Ptr backend, Desc desc) :
     VkSamplerCreateInfo info;
     INFERNO_ZERO_MEMORY(info);
 
-	info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-    info.flags = desc.flags;
-    info.magFilter = desc.mag_filter;
-    info.minFilter = desc.min_filter;
-    info.mipmapMode = desc.mipmap_mode;
-    info.addressModeU = desc.address_mode_u;
-    info.addressModeV = desc.address_mode_v;
-    info.addressModeW = desc.address_mode_w;
-    info.mipLodBias = desc.mip_lod_bias;
-    info.anisotropyEnable = desc.anisotropy_enable;
-    info.maxAnisotropy = desc.max_anisotropy;
-    info.compareEnable = desc.compare_enable;
-    info.compareOp = desc.compare_op;
-    info.minLod = desc.min_lod;
-    info.maxLod = desc.max_lod;
-    info.borderColor = desc.border_color; 
+    info.sType                   = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+    info.flags                   = desc.flags;
+    info.magFilter               = desc.mag_filter;
+    info.minFilter               = desc.min_filter;
+    info.mipmapMode              = desc.mipmap_mode;
+    info.addressModeU            = desc.address_mode_u;
+    info.addressModeV            = desc.address_mode_v;
+    info.addressModeW            = desc.address_mode_w;
+    info.mipLodBias              = desc.mip_lod_bias;
+    info.anisotropyEnable        = desc.anisotropy_enable;
+    info.maxAnisotropy           = desc.max_anisotropy;
+    info.compareEnable           = desc.compare_enable;
+    info.compareOp               = desc.compare_op;
+    info.minLod                  = desc.min_lod;
+    info.maxLod                  = desc.max_lod;
+    info.borderColor             = desc.border_color;
     info.unnormalizedCoordinates = desc.unnormalized_coordinates;
 
-	if (vkCreateSampler(backend->device(), &info, nullptr, &m_vk_sampler) != VK_SUCCESS)
+    if (vkCreateSampler(backend->device(), &info, nullptr, &m_vk_sampler) != VK_SUCCESS)
     {
         INFERNO_LOG_FATAL("(Vulkan) Failed to create sampler.");
         throw std::runtime_error("(Vulkan) Failed to create sampler.");
@@ -806,21 +1305,21 @@ DescriptorSet::DescriptorSet(Backend::Ptr backend, DescriptorSetLayout::Ptr layo
 {
     m_vk_pool = pool;
 
-	VkDescriptorSetAllocateInfo info;
+    VkDescriptorSetAllocateInfo info;
     INFERNO_ZERO_MEMORY(info);
 
-	VkDescriptorSetLayout vk_layout = layout->handle();
+    VkDescriptorSetLayout vk_layout = layout->handle();
 
-	info.sType              = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-	info.descriptorPool = pool->handle();
+    info.sType              = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+    info.descriptorPool     = pool->handle();
     info.descriptorSetCount = 1;
-	info.pSetLayouts        = &vk_layout;
-	
-	if (vkAllocateDescriptorSets(backend->device(), &info, &m_vk_ds) != VK_SUCCESS)
-	{
-	    INFERNO_LOG_FATAL("(Vulkan) Failed to allocate descriptor set.");
-	    throw std::runtime_error("(Vulkan) Failed to allocate descriptor set.");
-	}
+    info.pSetLayouts        = &vk_layout;
+
+    if (vkAllocateDescriptorSets(backend->device(), &info, &m_vk_ds) != VK_SUCCESS)
+    {
+        INFERNO_LOG_FATAL("(Vulkan) Failed to allocate descriptor set.");
+        throw std::runtime_error("(Vulkan) Failed to allocate descriptor set.");
+    }
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------
