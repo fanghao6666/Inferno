@@ -1045,7 +1045,7 @@ GraphicsPipeline::Desc::Desc()
 
 // -----------------------------------------------------------------------------------------------------------------------------------
 
-GraphicsPipeline::Desc& GraphicsPipeline::Desc::add_shader_module(VkShaderStageFlagBits stage, ShaderModule::Ptr shader_module, std::string name)
+GraphicsPipeline::Desc& GraphicsPipeline::Desc::add_shader_stage(VkShaderStageFlagBits stage, ShaderModule::Ptr shader_module, std::string name)
 {
     uint32_t idx = shader_stage_count++;
 
@@ -1185,20 +1185,20 @@ ComputePipeline::Desc::Desc()
 {
     INFERNO_ZERO_MEMORY(create_info);
 
-    create_info.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
+    create_info.sType       = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
     create_info.stage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------
 
-ComputePipeline::Desc& ComputePipeline::Desc::set_shader_module(ShaderModule::Ptr shader_module, std::string name)
+ComputePipeline::Desc& ComputePipeline::Desc::set_shader_stage(ShaderModule::Ptr shader_module, std::string name)
 {
-    shader_entry_name = name;
-    create_info.stage.pName = shader_entry_name.c_str();
+    shader_entry_name        = name;
+    create_info.stage.pName  = shader_entry_name.c_str();
     create_info.stage.module = shader_module->handle();
     create_info.stage.stage  = VK_SHADER_STAGE_COMPUTE_BIT;
-	
-	return *this;
+
+    return *this;
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------

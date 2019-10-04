@@ -420,13 +420,13 @@ public:
 
     struct Desc
     {
-        VkGraphicsPipelineCreateInfo create_info;
-        uint32_t       shader_stage_count = 0;
+        VkGraphicsPipelineCreateInfo    create_info;
+        uint32_t                        shader_stage_count = 0;
         VkPipelineShaderStageCreateInfo shader_stages[6];
         std::string                     shader_entry_names[6];
 
-		Desc();
-        Desc& add_shader_module(VkShaderStageFlagBits stage, ShaderModule::Ptr shader_module, std::string name);
+        Desc();
+        Desc& add_shader_stage(VkShaderStageFlagBits stage, ShaderModule::Ptr shader_module, std::string name);
         Desc& set_input_assembly_state(InputAssemblyStateDesc state);
         Desc& set_tessellation_state(TessellationStateDesc state);
         Desc& set_rasterization_state(RasterizationStateDesc state);
@@ -442,7 +442,7 @@ public:
 
     static GraphicsPipeline::Ptr create(Backend::Ptr backend, Desc desc);
 
-	inline VkPipeline handle() { return m_vk_pipeline; }
+    inline VkPipeline handle() { return m_vk_pipeline; }
 
     ~GraphicsPipeline();
 
@@ -463,9 +463,9 @@ public:
         VkComputePipelineCreateInfo create_info;
         std::string                 shader_entry_name;
 
-		Desc();
-        Desc& set_shader_module(ShaderModule::Ptr shader_module, std::string name);
-		Desc& set_pipeline_layout(std::shared_ptr<PipelineLayout> layout);
+        Desc();
+        Desc& set_shader_stage(ShaderModule::Ptr shader_module, std::string name);
+        Desc& set_pipeline_layout(std::shared_ptr<PipelineLayout> layout);
         Desc& set_base_pipeline(ComputePipeline::Ptr pipeline);
         Desc& set_base_pipeline_index(int32_t index);
     };
